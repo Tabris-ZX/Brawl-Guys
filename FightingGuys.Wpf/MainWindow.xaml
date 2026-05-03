@@ -1,0 +1,274 @@
+﻿<Window x:Class="FightingGuys.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="FightingGuys"
+        Width="870"
+        Height="750"
+        MinWidth="870"
+        MinHeight="750"
+        FontFamily="Microsoft YaHei UI"
+        Icon="Resources/Images/Icons/app.ico">
+    <Window.Resources>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F8FBFF" />
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#D4E4FF" />
+        <SolidColorBrush x:Key="TextTitleBrush" Color="#FFE58F" />
+        <SolidColorBrush x:Key="TextSectionBrush" Color="#FFFFF0" />
+        <SolidColorBrush x:Key="TextGoodBrush" Color="#7FD8FF" />
+        <SolidColorBrush x:Key="TextDangerBrush" Color="#FF92A3" />
+        <SolidColorBrush x:Key="TextStatusBrush" Color="#FFE082" />
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="#35507A" />
+            <Setter Property="Padding" Value="8,6" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="#111827" />
+            <Setter Property="Background" Value="#35507A" />
+        </Style>
+    </Window.Resources>
+
+    <Window.Background>
+        <RadialGradientBrush Center="0.5,0.05" GradientOrigin="0.5,0.05" RadiusX="0.9" RadiusY="0.9">
+            <GradientStop Color="#5A83C9" Offset="0" />
+            <GradientStop Color="#2E4F87" Offset="0.45" />
+            <GradientStop Color="#1A2E54" Offset="1" />
+        </RadialGradientBrush>
+    </Window.Background>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Margin="0,0,0,10"
+                Padding="12"
+                BorderBrush="#7AA7EE"
+                BorderThickness="1"
+                CornerRadius="18">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#5171A8" Offset="0" />
+                    <GradientStop Color="#365486" Offset="0.62" />
+                    <GradientStop Color="#253B66" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="24" ShadowDepth="0" Opacity="0.2" Color="#12213D" />
+            </Border.Effect>
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock FontSize="24"
+                               FontWeight="Black"
+                               Foreground="{StaticResource TextTitleBrush}"
+                               Text="Fighting Guys" />
+                    <TextBlock Margin="0,4,0,0"
+                               FontSize="13"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Text="v0.1.16-beta" />
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Bottom">
+                    
+
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Margin="0,0,0,6" Foreground="{StaticResource TextGoodBrush}" Text="左方" />
+                        <ComboBox x:Name="LeftFighterCombo"
+                                  Width="100"
+                                  Padding="5"
+                                  Background="#4D6FA5"
+                                  Foreground="#000000"
+                                  BorderBrush="#6F95D1"
+                                  SelectionChanged="FighterSelectionChanged" />
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Margin="0,0,0,6" Foreground="{StaticResource TextDangerBrush}" Text="右方" />
+                        <ComboBox x:Name="RightFighterCombo"
+                                  Width="100"
+                                  Padding="5"
+                                  Background="#4D6FA5"
+                                  Foreground="#000000"
+                                  BorderBrush="#6F95D1"
+                                  SelectionChanged="FighterSelectionChanged" />
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Margin="0,0,0,6" Foreground="{StaticResource TextSectionBrush}" Text="倍速" />
+                        <ComboBox x:Name="SpeedCombo"
+                                  Width="72"
+                                  Padding="5"
+                                  Background="#4D6FA5"
+                                  Foreground="#000000"
+                                  BorderBrush="#6F95D1"
+                                  SelectionChanged="SpeedCombo_SelectionChanged">
+                            <ComboBoxItem Content="0.5x" Tag="0.5" />
+                            <ComboBoxItem Content="1.0x" Tag="1.0" />
+                            <ComboBoxItem Content="2.0x" Tag="2.0" />
+                            <ComboBoxItem Content="4.0x" Tag="4.0" />
+                            <ComboBoxItem Content="8.0x" Tag="8.0" />
+                        </ComboBox>
+                    </StackPanel>
+                    
+                    <Button x:Name="PauseButton"
+                            Width="80"
+                            Height="32"
+                            Margin="0,20,10,0"
+                            Click="PauseButton_OnClick"
+                            Background="#5576AE"
+                            Foreground="#FFF3C3"
+                            BorderBrush="#7E9FD6"
+                            Content="暂停" />
+
+                    <Button x:Name="RestartButton"
+                            Width="80"
+                            Height="32"
+                            Margin="0,20,10,0"
+                            Click="RestartButton_OnClick"
+                            Background="#5576AE"
+                            Foreground="#FFF3C3"
+                            BorderBrush="#7E9FD6"
+                            Content="重开" />
+
+                    <Button x:Name="BalanceTestButton"
+                            Width="96"
+                            Height="32"
+                            Margin="0,20,0,0"
+                            Click="BalanceTestButton_OnClick"
+                            Background="#5576AE"
+                            Foreground="#FFF3C3"
+                            BorderBrush="#7E9FD6"
+                            Content="平衡性测试" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="220" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Margin="0,0,8,0"
+                    Padding="0"
+                    Background="#27446E"
+                    BorderBrush="#5F86C7"
+                    BorderThickness="1"
+                    CornerRadius="18">
+                <Border BorderBrush="#93C5FF"
+                        BorderThickness="3"
+                        CornerRadius="0"
+                        Background="#1C3157"
+                        ClipToBounds="True">
+                    <Canvas x:Name="ArenaCanvas"
+                            Width="600"
+                            Height="600"
+                            ClipToBounds="True"
+                            SnapsToDevicePixels="True" />
+                </Border>
+            </Border>
+
+            <StackPanel Grid.Column="1">
+                <Border Margin="0,0,0,10"
+                        Padding="10"
+                        Background="#27446E"
+                        BorderBrush="#5F86C7"
+                        BorderThickness="1"
+                        CornerRadius="18">
+                    <StackPanel>
+                        <TextBlock FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextSectionBrush}"
+                                   Text="对战信息" />
+
+                        <Border Margin="0,8,0,10"
+                                Padding="8"
+                                Background="#4A6B9D"
+                                CornerRadius="10">
+                            <TextBlock x:Name="StatusTextBlock"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextStatusBrush}"
+                                       Text="准备开始" />
+                        </Border>
+
+                        <Border Margin="0,0,0,8"
+                                Padding="8"
+                                Background="#4A6B9D"
+                                CornerRadius="12">
+                            <StackPanel>
+                                <TextBlock x:Name="LeftNameTextBlock"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource TextGoodBrush}"
+                                           />
+                                <ProgressBar x:Name="LeftHealthBar"
+                                             Height="12"
+                                             Margin="0,6,0,4"
+                                             Maximum="100"
+                                             Foreground="#5AA9FF"
+                                             Value="100" />
+                                <TextBlock x:Name="LeftHealthTextBlock"
+                                           Foreground="{StaticResource TextGoodBrush}"
+                                           Text="HP" />
+                                <TextBlock x:Name="LeftdescTextBlock"
+                                           Margin="0,6,0,0"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="#8FC8FF"
+                                           Text="描述" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="8"
+                                Background="#4A6B9D"
+                                CornerRadius="12">
+                            <StackPanel>
+                                <TextBlock x:Name="RightNameTextBlock"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource TextDangerBrush}"
+                                           />
+                                <ProgressBar x:Name="RightHealthBar"
+                                             Height="12"
+                                             Margin="0,6,0,4"
+                                             Maximum="100"
+                                             Foreground="#FF6B7A"
+                                             Value="100" />
+                                <TextBlock x:Name="RightHealthTextBlock"
+                                           Foreground="{StaticResource TextDangerBrush}"
+                                           Text="HP" />
+                                <TextBlock x:Name="RightdescTextBlock"
+                                           Margin="0,6,0,0"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="#FFB3BC"
+                                           Text="描述" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Padding="10"
+                        Visibility="Collapsed"
+                        Background="#27446E"
+                        BorderBrush="#5F86C7"
+                        BorderThickness="1"
+                        CornerRadius="18">
+                    <StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

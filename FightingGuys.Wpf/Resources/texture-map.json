@@ -1,0 +1,19 @@
+﻿{
+  "roles/drunkard.png": "Resources/Images/Textures/Roles/drunkard.png",
+  "roles/angry-man.png": "Resources/Images/Textures/Roles/angry-man.png",
+  "roles/shooter.png": "Resources/Images/Textures/Roles/shooter.png",
+  "roles/lijie.png": "Resources/Images/Textures/Roles/lijie.png",
+  "roles/drone.png": "Resources/Images/Textures/Roles/drone.png",
+  "roles/qzd.png": "Resources/Images/Textures/Roles/qzd.png",
+  "roles/lq.png": "Resources/Images/Textures/Roles/lq.png",
+  "roles/ref.png": "Resources/Images/Textures/Roles/ref.png",
+  "roles/ikun.png": "Resources/Images/Textures/Roles/ikun.png",
+  
+  "throwable/bottle.png": "Resources/Images/Textures/Throwable/bottle.png",
+  "throwable/baseball.png": "Resources/Images/Textures/Throwable/baseball.png",
+  "throwable/bullet.png": "Resources/Images/Textures/Throwable/bullet.png",
+  "throwable/drone-bolt.png": "Resources/Images/Textures/Throwable/bullet.png",
+  "throwable/chalk.png": "Resources/Images/Textures/Throwable/chalk.png",
+  "throwable/zzz.png": "Resources/Images/Textures/Throwable/zzz.png",
+  "throwable/basketball.png": "Resources/Images/Textures/Throwable/basketball.png"
+}

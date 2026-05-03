@@ -1,0 +1,80 @@
+﻿[
+  {
+    "key": "drunkard",
+    "name": "酒瓶",
+    "texturePath": "throwable/bottle.png",
+    "Speed": 450,
+    "radius": 40,
+    "damage": 90,
+    "colorHex": "#A97942"
+  },
+  {
+    "key": "angry-man",
+    "name": "棒球",
+    "texturePath": "throwable/baseball.png",
+    "Speed": 800,
+    "radius": 20,
+    "damage": 56,
+    "colorHex": "#F5F1DD"
+  },
+  {
+    "key": "shooter",
+    "name": "子弹",
+    "texturePath": "throwable/bullet.png",
+    "Speed": 1000,
+    "radius": 10,
+    "damage": 20,
+    "colorHex": "#FFE27A"
+  },
+  {
+    "key": "drone",
+    "name": "无人机子弹",
+    "texturePath": "throwable/drone-bolt.png",
+    "Speed": 800,
+    "radius": 15,
+    "damage": 10,
+    "colorHex": "#8DD8FF",
+    "unitTexturePath": "roles/drone.png",
+    "unitRadius": 30,
+    "unitHP": 30,
+    "unitCD": 0.6
+  },
+  {
+    "key": "qzd",
+    "name": "粉笔头",
+    "texturePath": "throwable/chalk.png",
+    "Speed": 800,
+    "radius": 15,
+    "damage": 1,
+    "colorHex": "#F4F7FF"
+  },
+  {
+    "key": "lq",
+    "name": "zzz",
+    "texturePath": "throwable/zzz.png",
+    "Speed": 250,
+    "radius": 45,
+    "damage": 50,
+    "colorHex": "#9F7AEA",
+    "CanSleepTarget": true,
+    "SleepDuration": 2.0
+  },
+  {
+    "key": "reflector",
+    "name": "尖刺",
+    "texturePath": "throwable/chalk.png",
+    "Speed": 850,
+    "radius": 15,
+    "damage": 90,
+    "colorHex": "#FF9E5E"
+  },
+  {
+    "key": "ikun",
+    "name": "篮球",
+    "texturePath": "throwable/basketball.png",
+    "Speed": 780,
+    "radius": 28,
+    "damage": 56,
+    "colorHex": "#E58A3A"
+  }
+]

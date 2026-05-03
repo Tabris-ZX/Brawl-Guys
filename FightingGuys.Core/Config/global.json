@@ -1,0 +1,6 @@
+﻿{
+    "maxDeltaTime": 0.033,
+    "fighterSidePadding": 170,
+    "minimumSpeed": 90,
+    "projectileLifeTime": 5.0
+}

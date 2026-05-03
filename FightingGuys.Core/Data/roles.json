@@ -1,0 +1,98 @@
+﻿[
+  {
+    "key": "drunkard",
+    "name": "阿巴的贝尔",
+    "desc": "阿巴的贝尔",
+    "texturePath": "roles/drunkard.png",
+    "radius": 50,
+    "HP": 1060,
+    "Speed": 150,
+    "CD": 3.0,
+    "Accuracy": 76,
+    "isMirror": 1
+  },
+  {
+    "key": "angry-man",
+    "name": "发怒男人",
+    "desc": "这个男人很生气",
+    "texturePath": "roles/angry-man.png",
+    "radius": 50,
+    "HP": 1000,
+    "Speed": 160,
+    "CD": 2.0,
+    "Accuracy": 86,
+    "isMirror": 1
+  },
+  {
+    "key": "shooter",
+    "name": "快枪手",
+    "desc": "他是村里最会用枪的人",
+    "texturePath": "roles/shooter.png",
+    "radius": 50,
+    "HP": 960,
+    "Speed": 180,
+    "CD": 4.0,
+    "Accuracy": 90,
+    "isMirror": 0
+  },
+  {
+    "key": "lijie",
+    "name": "空军上将",
+    "desc": "麦克阿杰",
+    "texturePath": "roles/lijie.png",
+    "radius": 50,
+    "HP": 960,
+    "Speed": 150,
+    "CD": 6.0,
+    "Accuracy": 95,
+    "isMirror": 0
+  },
+  {
+    "key": "qzd",
+    "name": "静水流深",
+    "desc": "静水流深",
+    "texturePath": "roles/qzd.png",
+    "radius": 50,
+    "HP": 1000,
+    "Speed": 145,
+    "CD": 9.0,
+    "Accuracy": 50,
+    "isMirror": 1
+  },
+  {
+    "key": "lq",
+    "name": "李强",
+    "desc": "物理课 !?强强?!",
+    "texturePath": "roles/lq.png",
+    "radius": 50,
+    "HP": 1000,
+    "Speed": 160,
+    "CD": 4.5,
+    "Accuracy": 70,
+    "isMirror": 1
+  },
+  {
+    "key": "reflector",
+    "name": "反伤者",
+    "desc": "j j z j",
+    "texturePath": "roles/ref.png",
+    "radius": 50,
+    "HP": 1200,
+    "Speed": 150,
+    "CD": 4.0,
+    "Accuracy": 100,
+    "isMirror": 0
+  },
+  {
+    "key": "ikun",
+    "name": "ikun",
+    "desc": "别感冒",
+    "texturePath": "roles/ikun.png",
+    "radius": 50,
+    "HP": 910,
+    "Speed": 180,
+    "CD": 3.5,
+    "Accuracy": 90,
+    "isMirror": 1
+  }
+]
