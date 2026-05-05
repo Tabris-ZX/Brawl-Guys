@@ -20,7 +20,7 @@
     "HP": 1000,
     "Speed": 160,
     "CD": 2.0,
-    "Accuracy": 86,
+    "Accuracy": 80,
     "isMirror": 1
   },
   {
@@ -41,7 +41,7 @@
     "desc": "麦克阿杰",
     "texturePath": "roles/lijie.png",
     "radius": 50,
-    "HP": 960,
+    "HP": 970,
     "Speed": 150,
     "CD": 6.0,
     "Accuracy": 95,
@@ -101,10 +101,10 @@
     "desc": "双相情感障碍",
     "texturePath": "roles/watcher.png",
     "radius": 50,
-    "HP": 1000,
-    "Speed": 180,
-    "CD": 2.0,
-    "Accuracy": 90,
+    "HP": 960,
+    "Speed": 175,
+    "CD": 2.4,
+    "Accuracy": 84,
     "isMirror": 1
   }
 ]

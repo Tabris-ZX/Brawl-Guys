@@ -1,4 +1,5 @@
 ﻿{
+    "arenaSize": 600,
     "maxDeltaTime": 0.033,
     "fighterSidePadding": 170,
     "minimumSpeed": 90,

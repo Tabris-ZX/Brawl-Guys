@@ -12,9 +12,9 @@
     "key": "angry-man",
     "name": "棒球",
     "texturePath": "throwable/baseball.png",
-    "Speed": 800,
+    "Speed": 780,
     "radius": 20,
-    "damage": 56,
+    "damage": 60,
     "colorHex": "#F5F1DD"
   },
   {
@@ -29,7 +29,7 @@
   {
     "key": "drone",
     "name": "无人机子弹",
-    "texturePath": "throwable/drone-bolt.png",
+    "texturePath": "throwable/bullet.png",
     "Speed": 800,
     "radius": 15,
     "damage": 10,
@@ -81,9 +81,9 @@
     "key": "watcher",
     "name": "法球",
     "texturePath": "throwable/orb.png",
-    "Speed": 800,
-    "radius": 25,
-    "damage": 50,
+    "Speed": 750,
+    "radius": 24,
+    "damage": 60,
     "colorHex": "#8ED1C2"
   }
 ]

@@ -1,21 +1,24 @@
 ﻿namespace BrawlGuys.Core.Skills.Roles;
 
 /// <summary>
-/// 快枪手技能：每 5 秒开启一次快速射击，连续打出 6 发子弹。
+/// 快枪手技能：每次释放都会开启一次短间隔连射。
 /// </summary>
 public sealed class ShooterSkill : IFighterSkill
 {
+    private const int ShotCount = 6;
+    private const double ShotIntervalSeconds = 0.08;
+
     public string Key => "shooter";
 
-    public void Execute(SkillContext context)
+    public void Execute(BattleWorld world, FighterState caster, FighterState target)
     {
-        context.World.StartBurstFire(
-            owner: context.Caster,
-            target: context.Target,
+        world.StartBurstFire(
+            owner: caster,
+            target: target,
             throwableKey: Key,
-            shotCount: 6,
-            intervalSeconds: 0.08);
+            shotCount: ShotCount,
+            intervalSeconds: ShotIntervalSeconds);
 
-        context.Caster.SkillFlashTime = 0.35;
+        caster.SkillFlashTime = 0.35;
     }
 }

@@ -7,13 +7,12 @@ public sealed class DrunkardSkill : IFighterSkill
 {
     public string Key => "drunkard";
 
-    public void Execute(SkillContext context)
+    public void Execute(BattleWorld world, FighterState caster, FighterState target)
     {
-        context.World.SpawnProjectile(
-            owner: context.Caster,
-            target: context.Target,
-            throwable: ThrowableCatalog.Get(Key));
+        world.SpawnProjectile(
+            owner: caster,
+            target: target);
 
-        context.Caster.SkillFlashTime = 0.25;
+        caster.SkillFlashTime = 0.25;
     }
 }

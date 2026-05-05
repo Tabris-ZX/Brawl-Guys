@@ -2,6 +2,8 @@
 
 /// <summary>
 /// 角色静态配置。主要由 Data/roles.json 反序列化生成。
+/// 为了满足“新增角色只改 roles.json + 新增一个 Skill 文件”，
+/// 角色自己的基础投掷物参数也允许直接写在这里。
 /// </summary>
 public sealed class FighterDefinition
 {
@@ -34,4 +36,31 @@ public sealed class FighterDefinition
 
     /// <summary>是否根据对方位置镜像翻转贴图。1=会翻转,0=保持原样。</summary>
     public int isMirror { get; init; }
+
+    /// <summary>角色默认投掷物贴图。新角色推荐直接写在 roles.json 里。</summary>
+    public string? ProjectileTexturePath { get; init; }
+
+    /// <summary>角色默认投掷物速度。</summary>
+    public double? ProjectileSpeed { get; init; }
+
+    /// <summary>角色默认投掷物半径。</summary>
+    public double? ProjectileRadius { get; init; }
+
+    /// <summary>角色默认投掷物伤害。</summary>
+    public double? ProjectileDamage { get; init; }
+
+    /// <summary>角色默认投掷物颜色。</summary>
+    public string? ProjectileColorHex { get; init; }
+
+    /// <summary>角色默认投掷物是否附带睡眠效果。</summary>
+    public bool ProjectileCanSleepTarget { get; init; }
+
+    /// <summary>角色默认投掷物睡眠时长。</summary>
+    public double ProjectileSleepDuration { get; init; }
+
+    public bool HasInlineProjectileDefinition => !string.IsNullOrWhiteSpace(ProjectileTexturePath)
+        && ProjectileSpeed is not null
+        && ProjectileRadius is not null
+        && ProjectileDamage is not null
+        && !string.IsNullOrWhiteSpace(ProjectileColorHex);
 }

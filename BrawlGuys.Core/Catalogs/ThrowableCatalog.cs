@@ -16,6 +16,9 @@ public static class ThrowableCatalog
 
     public static IReadOnlyList<ThrowableDefinition> All { get; } = LoadDefinitions();
 
+    public static bool Contains(string key) =>
+        All.Any(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+
     public static ThrowableDefinition Get(string key) =>
         All.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
         ?? throw new InvalidOperationException($"Unknown throwable key: {key}");

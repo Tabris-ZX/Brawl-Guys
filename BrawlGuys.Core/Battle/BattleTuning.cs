@@ -17,6 +17,11 @@ public static class BattleTuning
     private static readonly Lazy<GlobalConfig> Config = new(LoadConfig);
 
     /// <summary>
+    /// 场地边长。当前竞技场保持正方形。
+    /// </summary>
+    public static double ArenaSize => Config.Value.ArenaSize;
+
+    /// <summary>
     /// 单帧最大模拟时间，防止窗口卡顿后一次性推进太多时间导致投掷物穿过目标。
     /// </summary>
     public static double MaxDeltaTime => Config.Value.MaxDeltaTime;
@@ -54,6 +59,11 @@ public static class BattleTuning
 
     private static void ValidateConfig(GlobalConfig config, string source)
     {
+        if (config.ArenaSize <= 0)
+        {
+            throw new InvalidOperationException($"arenaSize must be greater than 0 in {source}");
+        }
+
         if (config.MaxDeltaTime <= 0)
         {
             throw new InvalidOperationException($"maxDeltaTime must be greater than 0 in {source}");
@@ -62,6 +72,11 @@ public static class BattleTuning
         if (config.FighterSidePadding < 0)
         {
             throw new InvalidOperationException($"fighterSidePadding cannot be negative in {source}");
+        }
+
+        if ((config.FighterSidePadding * 2) >= config.ArenaSize)
+        {
+            throw new InvalidOperationException($"fighterSidePadding is too large for arenaSize in {source}");
         }
 
         if (config.MinimumSpeed < 0)
@@ -77,6 +92,7 @@ public static class BattleTuning
 
     private sealed class GlobalConfig
     {
+        public double ArenaSize { get; init; } = 600;
         public double MaxDeltaTime { get; init; } = 0.033;
         public double FighterSidePadding { get; init; } = 170;
         public double MinimumSpeed { get; init; } = 90;
