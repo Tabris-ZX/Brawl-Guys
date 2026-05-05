@@ -19,6 +19,8 @@ public sealed class FighterState
     public int ChargePreviewShotCount { get; set; }
     public int ChargePreviewDamage { get; set; }
     public int IkunBasketballCount { get; set; }
+    public bool WatcherIsAngry { get; set; }
+    public int WatcherSuccessfulHitCount { get; set; }
     public double SkillFlashTime { get; set; }
     public double SleepTime { get; set; }
     public bool IsAlive => Health > 0;

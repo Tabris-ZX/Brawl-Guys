@@ -72,9 +72,18 @@
     "key": "ikun",
     "name": "篮球",
     "texturePath": "throwable/basketball.png",
-    "Speed": 780,
+    "Speed": 750,
     "radius": 28,
-    "damage": 56,
+    "damage": 48,
     "colorHex": "#E58A3A"
+  },
+  {
+    "key": "watcher",
+    "name": "法球",
+    "texturePath": "throwable/orb.png",
+    "Speed": 800,
+    "radius": 25,
+    "damage": 50,
+    "colorHex": "#8ED1C2"
   }
 ]

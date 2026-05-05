@@ -69,11 +69,11 @@
                     <TextBlock FontSize="24"
                                FontWeight="Black"
                                Foreground="{StaticResource TextTitleBrush}"
-                               Text="Fighting Guys" />
+                               Text="Brawl Guys" />
                     <TextBlock Margin="0,4,0,0"
                                FontSize="13"
                                Foreground="{StaticResource TextMutedBrush}"
-                               Text="v0.1.16-beta" />
+                               Text="v0.2.1-beta" />
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right"
@@ -116,7 +116,6 @@
                             <ComboBoxItem Content="1.0x" Tag="1.0" />
                             <ComboBoxItem Content="2.0x" Tag="2.0" />
                             <ComboBoxItem Content="4.0x" Tag="4.0" />
-                            <ComboBoxItem Content="8.0x" Tag="8.0" />
                         </ComboBox>
                     </StackPanel>
                     

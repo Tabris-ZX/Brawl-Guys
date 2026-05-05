@@ -49,7 +49,7 @@
   },
   {
     "key": "qzd",
-    "name": "静水流深",
+    "name": "漆老板",
     "desc": "静水流深",
     "texturePath": "roles/qzd.png",
     "radius": 50,
@@ -89,9 +89,21 @@
     "desc": "别感冒",
     "texturePath": "roles/ikun.png",
     "radius": 50,
-    "HP": 910,
+    "HP": 925,
     "Speed": 180,
-    "CD": 3.5,
+    "CD": 3,
+    "Accuracy": 90,
+    "isMirror": 1
+  },
+  {
+    "key": "watcher",
+    "name": "观者",
+    "desc": "双相情感障碍",
+    "texturePath": "roles/watcher.png",
+    "radius": 50,
+    "HP": 1000,
+    "Speed": 180,
+    "CD": 2.0,
     "Accuracy": 90,
     "isMirror": 1
   }

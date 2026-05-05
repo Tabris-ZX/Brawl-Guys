@@ -13,9 +13,11 @@ public sealed class BattleWorld
     private const double DefaultDroneRadius = 25;
     private const double MaxFighterProjectileSpreadAngleDegrees = 50;
     private const int QzdMaxPreviewValue = 40;
+    private const double WatcherAttackDelaySeconds = 5.0;
     private const string QzdSkillKey = "qzd";
     private const string ReflectorKey = "reflector";
     private const string IkunKey = "ikun";
+    private const string WatcherKey = "watcher";
 
     private readonly Random _random = new();
 
@@ -273,6 +275,7 @@ public sealed class BattleWorld
             ChargePreviewShotCount = 0,
             ChargePreviewDamage = 0,
             IkunBasketballCount = definition.Key.Equals(IkunKey, StringComparison.OrdinalIgnoreCase) ? 2 : 0,
+            WatcherIsAngry = false,
             SkillFlashTime = 0
         };
 
@@ -299,13 +302,17 @@ public sealed class BattleWorld
             BounceOnWalls(self);
             KeepMinimumSpeed(self);
 
-            self.SkillTimer -= dt;
-        UpdateBurstFire(self, dt);
-
-            if (self.SkillTimer <= 0 && enemy.IsAlive)
+            var canAttackNow = CanAttackNow(self);
+            if (canAttackNow)
             {
-                UseSkill(self, enemy);
-                self.SkillTimer += self.Definition.CD;
+                self.SkillTimer -= dt;
+                UpdateBurstFire(self, dt);
+
+                if (self.SkillTimer <= 0 && enemy.IsAlive)
+                {
+                    UseSkill(self, enemy);
+                    self.SkillTimer += self.Definition.CD;
+                }
             }
         }
 
@@ -601,9 +608,10 @@ public sealed class BattleWorld
                 var canDealDamage = !projectile.DealDamageOnlyIfTargetSleeping || target.IsSleeping;
                 if (canDealDamage)
                 {
-                    target.Health -= projectile.Damage;
-                    SpawnDamageText(target.Position, projectile.Damage, target.Side);
-                    HandleFighterDamaged(target, projectile.Damage);
+                    var damage = ApplyDamageToFighter(target, projectile.Damage, owner);
+                    SpawnDamageText(target.Position, damage, target.Side);
+                    HandleFighterDamaged(target, damage);
+                    HandleSuccessfulFighterHit(owner, target, damage);
                 }
                 else if (projectile.CanSleepTarget)
                 {
@@ -751,6 +759,62 @@ public sealed class BattleWorld
     private static bool IsProjectileHit(BattleProjectile projectile, FighterState target)
     {
         return IsProjectileHit(projectile, target.Position, target.Definition.Radius);
+    }
+
+    private bool CanAttackNow(FighterState fighter)
+    {
+        return !fighter.Definition.Key.Equals(WatcherKey, StringComparison.OrdinalIgnoreCase)
+            || ElapsedTime >= WatcherAttackDelaySeconds;
+    }
+
+    private double ApplyDamageToFighter(FighterState target, double baseDamage, FighterState? attacker = null)
+    {
+        var damage = baseDamage;
+
+        if (attacker is not null
+            && attacker.IsAlive
+            && attacker.Definition.Key.Equals(WatcherKey, StringComparison.OrdinalIgnoreCase)
+            && attacker.WatcherIsAngry)
+        {
+            damage *= 2;
+        }
+
+        if (target.Definition.Key.Equals(WatcherKey, StringComparison.OrdinalIgnoreCase)
+            && target.WatcherIsAngry)
+        {
+            damage *= 2;
+        }
+
+        target.Health -= damage;
+        return damage;
+    }
+
+    private void HandleSuccessfulFighterHit(FighterState? attacker, FighterState target, double damage)
+    {
+        if (attacker is null
+            || !attacker.IsAlive
+            || !attacker.Definition.Key.Equals(WatcherKey, StringComparison.OrdinalIgnoreCase)
+            || attacker.Id == target.Id)
+        {
+            return;
+        }
+
+        attacker.WatcherSuccessfulHitCount++;
+
+        if (attacker.WatcherSuccessfulHitCount == 1)
+        {
+            attacker.WatcherIsAngry = true;
+            attacker.SkillFlashTime = Math.Max(attacker.SkillFlashTime, 0.35);
+            return;
+        }
+
+        if (!attacker.WatcherIsAngry)
+        {
+            attacker.Health = Math.Min(attacker.Definition.HP, attacker.Health + damage);
+        }
+
+        attacker.WatcherIsAngry = !attacker.WatcherIsAngry;
+        attacker.SkillFlashTime = Math.Max(attacker.SkillFlashTime, 0.35);
     }
 
     private void HandleFighterDamaged(FighterState target, double damage)

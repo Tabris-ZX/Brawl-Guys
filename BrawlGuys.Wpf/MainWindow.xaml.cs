@@ -451,6 +451,8 @@ public partial class MainWindow : Window
             IsHitTestVisible = false
         };
 
+        DrawWatcherAura(fighter);
+
         if (fighter.SkillFlashTime > 0)
         {
             var flashRadius = radius + 10 + (fighter.SkillFlashTime * 14);
@@ -483,6 +485,57 @@ public partial class MainWindow : Window
 
         DrawChargePreview(fighter);
         DrawHealthBarAboveFighter(fighter);
+    }
+
+    private void DrawWatcherAura(FighterState fighter)
+    {
+        if (!fighter.Definition.Key.Equals("watcher", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var auraColor = fighter.WatcherIsAngry ? "#FF4D4D" : "#4DA6FF";
+        var pulse = 0.5 + (0.5 * Math.Sin(_world.ElapsedTime * 5.5));
+        var orbitRadius = fighter.Definition.Radius + 3 + (pulse * 2.5);
+        var time = _world.ElapsedTime;
+
+        for (var i = 0; i < 12; i++)
+        {
+            var angle = ((Math.PI * 2) / 12 * i) + (time * 1.8);
+            var wobble = Math.Sin((time * 7) + (i * 1.3)) * 3.5;
+            var center = fighter.Position + new Vec2(
+                Math.Cos(angle) * (orbitRadius + wobble),
+                Math.Sin(angle) * (orbitRadius + wobble * 0.7));
+
+            var width = 14 + ((i % 3) * 3) + (pulse * 2);
+            var height = 7 + ((i % 2) * 2) + (pulse * 1.5);
+            var alpha = fighter.WatcherIsAngry ? 0.22 : 0.18;
+
+            var spark = new Ellipse
+            {
+                Width = width,
+                Height = height,
+                Fill = CreateBrush(auraColor, alpha),
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransform = new RotateTransform((angle * 180 / Math.PI) + 90),
+                IsHitTestVisible = false
+            };
+            Canvas.SetLeft(spark, center.X - (width / 2));
+            Canvas.SetTop(spark, center.Y - (height / 2));
+            ArenaCanvas.Children.Add(spark);
+        }
+
+        var softGlowRadius = fighter.Definition.Radius + 6;
+        var softGlow = new Ellipse
+        {
+            Width = softGlowRadius * 2,
+            Height = softGlowRadius * 2,
+            Fill = CreateBrush(auraColor, fighter.WatcherIsAngry ? 0.11 : 0.09),
+            IsHitTestVisible = false
+        };
+        Canvas.SetLeft(softGlow, fighter.Position.X - softGlowRadius);
+        Canvas.SetTop(softGlow, fighter.Position.Y - softGlowRadius);
+        ArenaCanvas.Children.Add(softGlow);
     }
 
     private void DrawSleepZ(FighterState fighter)
