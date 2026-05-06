@@ -86,4 +86,29 @@ public sealed class BattleProjectile
     /// 命中单位后是否继续存在。
     /// </summary>
     public bool KeepOnFighterHit { get; init; }
+
+    /// <summary>
+    /// 是否在撞墙时散射碎片。
+    /// </summary>
+    public bool SplitOnWallImpact { get; init; }
+
+    /// <summary>
+    /// 是否在命中单位时散射碎片。
+    /// </summary>
+    public bool SplitOnUnitImpact { get; init; }
+
+    /// <summary>
+    /// 碎片数量。
+    /// </summary>
+    public int FragmentCount { get; init; }
+
+    /// <summary>
+    /// 碎片伤害倍率。
+    /// </summary>
+    public double FragmentDamageRatio { get; init; }
+
+    /// <summary>
+    /// 碎片尺寸倍率。
+    /// </summary>
+    public double FragmentRadiusScale { get; init; }
 }

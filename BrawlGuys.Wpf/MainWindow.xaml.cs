@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Globalization;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -23,6 +24,8 @@ public partial class MainWindow : Window
     private static readonly Dictionary<string, Brush> ImageBrushCache = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly BattleWorld _world = new();
+    private readonly DrawingGroup _arenaDrawingGroup = new();
+    private readonly Image _arenaImage = new();
     private Brush _arenaBackgroundBrush = CreateArenaBackgroundBrush(ArenaBackgroundLightColor);
 
     private readonly DispatcherTimer _timer;
@@ -43,6 +46,8 @@ public partial class MainWindow : Window
         ArenaCanvas.Height = _world.ArenaHeight;
         RenderOptions.SetBitmapScalingMode(ArenaCanvas, BitmapScalingMode.LowQuality);
         RenderOptions.SetEdgeMode(ArenaCanvas, EdgeMode.Aliased);
+
+        InitializeArenaRenderer();
 
         LeftHealthBar.Foreground = CreateBrush(LeftSideColor);
         RightHealthBar.Foreground = CreateBrush(RightSideColor);
@@ -111,9 +116,9 @@ public partial class MainWindow : Window
             var rightKey = RightFighterCombo.SelectedValue as string ?? "angry-man";
             var leftName = (LeftFighterCombo.SelectedItem as FighterDefinition)?.Name ?? leftKey;
             var rightName = (RightFighterCombo.SelectedItem as FighterDefinition)?.Name ?? rightKey;
-            const int halfMatches = 100;
+            const int halfMatches = 500;
             const int totalMatches = halfMatches * 2;
-            const double simulationSpeed = 16.0;
+            const double simulationSpeed = 32.0;
             const double baseDt = 1.0 / 60.0;
             const double maxSimulatedSecondsPerMatch = 120;
 
@@ -198,7 +203,7 @@ public partial class MainWindow : Window
             StatusTextBlock.Text = $"测试完成：{leftName} 总胜 {result.leftTotalWins} / {rightName} 总胜 {result.rightTotalWins} / 平局 {result.totalDraws}";
             MessageBox.Show(
                 this,
-                $"16x 快速战斗 {totalMatches} 场结果：\n\n上半场（{halfMatches}场，左右不变）\n- 左方 {leftName} 胜场：{result.firstHalfLeftWins}\n- 右方 {rightName} 胜场：{result.firstHalfRightWins}\n- 平局：{result.firstHalfDraws}\n\n下半场（{halfMatches}场，互换左右）\n- {leftName} 胜场：{result.secondHalfLeftWins}\n- {rightName} 胜场：{result.secondHalfRightWins}\n- 平局：{result.secondHalfDraws}\n\n总计\n- {leftName} 总胜场：{result.leftTotalWins}\n- {rightName} 总胜场：{result.rightTotalWins}\n- 总平局：{result.totalDraws}",
+                $"32x 快速战斗 {totalMatches} 场结果：\n\n上半场（{halfMatches}场，左右不变）\n- 左方 {leftName} 胜场：{result.firstHalfLeftWins}\n- 右方 {rightName} 胜场：{result.firstHalfRightWins}\n- 平局：{result.firstHalfDraws}\n\n下半场（{halfMatches}场，互换左右）\n- {leftName} 胜场：{result.secondHalfLeftWins}\n- {rightName} 胜场：{result.secondHalfRightWins}\n- 平局：{result.secondHalfDraws}\n\n总计\n- {leftName} 总胜场：{result.leftTotalWins}\n- {rightName} 总胜场：{result.rightTotalWins}\n- 总平局：{result.totalDraws}",
                 "平衡性测试",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -319,8 +324,29 @@ public partial class MainWindow : Window
         }
     }
 
+    private void InitializeArenaRenderer()
+    {
+        _arenaImage.Width = _world.ArenaWidth;
+        _arenaImage.Height = _world.ArenaHeight;
+        _arenaImage.Stretch = Stretch.Fill;
+        _arenaImage.HorizontalAlignment = HorizontalAlignment.Left;
+        _arenaImage.VerticalAlignment = VerticalAlignment.Top;
+        _arenaImage.SnapsToDevicePixels = true;
+        _arenaImage.IsHitTestVisible = false;
+        Canvas.SetLeft(_arenaImage, 0);
+        Canvas.SetTop(_arenaImage, 0);
+
+        _arenaDrawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0, 0, _world.ArenaWidth, _world.ArenaHeight));
+        _arenaDrawingGroup.GuidelineSet = new GuidelineSet(new[] { 0.0, _world.ArenaWidth }, new[] { 0.0, _world.ArenaHeight });
+        _arenaImage.Source = new DrawingImage(_arenaDrawingGroup);
+
+        ArenaCanvas.Children.Clear();
+        ArenaCanvas.Children.Add(_arenaImage);
+    }
+
     private void RestartMatch()
     {
+        _sidePanelSyncAccumulator = 0;
         var leftKey = LeftFighterCombo.SelectedValue as string ?? "drunkard";
         var rightKey = RightFighterCombo.SelectedValue as string ?? "angry-man";
         _world.StartMatch(leftKey, rightKey);
@@ -401,70 +427,56 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 重新绘制整个竞技场。当前 MVP 直接清空重画，后续可优化为对象复用。
+    /// 使用单个 DrawingGroup 重绘竞技场，避免每帧创建/销毁大量 WPF UIElement 导致卡顿。
     /// </summary>
     private void RenderWorld()
     {
-        ArenaCanvas.Children.Clear();
-        DrawArenaBackground();
+        using var dc = _arenaDrawingGroup.Open();
+        DrawArenaBackground(dc);
 
         foreach (var effect in _world.Effects.Where(effect => effect.Type != BattleEffectType.DamageText))
         {
-            DrawEffect(effect);
+            DrawEffect(dc, effect);
         }
 
         foreach (var projectile in _world.Projectiles)
         {
-            DrawProjectile(projectile);
+            DrawProjectile(dc, projectile);
         }
 
         foreach (var fighter in _world.Fighters)
         {
-            DrawFighter(fighter);
+            DrawFighter(dc, fighter);
         }
 
         foreach (var summonable in _world.Summonables)
         {
-            DrawSummonable(summonable);
+            DrawSummonable(dc, summonable);
         }
 
         foreach (var effect in _world.Effects.Where(effect => effect.Type == BattleEffectType.DamageText))
         {
-            DrawEffect(effect);
+            DrawEffect(dc, effect);
         }
     }
 
     /// <summary>
     /// 绘制竞技场背景。使用纯蓝色背景，避免网格干扰画面。
     /// </summary>
-    private void DrawArenaBackground()
+    private void DrawArenaBackground(DrawingContext dc)
     {
-        var background = new Rectangle
-        {
-            Width = _world.ArenaWidth,
-            Height = _world.ArenaHeight,
-            Fill = _arenaBackgroundBrush,
-            IsHitTestVisible = false
-        };
-        ArenaCanvas.Children.Add(background);
-
-        var borderGlow = new Rectangle
-        {
-            Width = _world.ArenaWidth,
-            Height = _world.ArenaHeight,
-            Stroke = CreateBrush("#B9DDFF", 0.65),
-            StrokeThickness = 3,
-            Fill = Brushes.Transparent,
-            IsHitTestVisible = false
-        };
-        ArenaCanvas.Children.Add(borderGlow);
+        dc.DrawRectangle(_arenaBackgroundBrush, null, new Rect(0, 0, _world.ArenaWidth, _world.ArenaHeight));
+        dc.DrawRectangle(
+            Brushes.Transparent,
+            new Pen(CreateBrush("#B9DDFF", 0.65), 3),
+            new Rect(1.5, 1.5, _world.ArenaWidth - 3, _world.ArenaHeight - 3));
     }
 
-    private void DrawEffect(BattleEffect effect)
+    private void DrawEffect(DrawingContext dc, BattleEffect effect)
     {
         if (effect.Type == BattleEffectType.DamageText)
         {
-            DrawDamageText(effect);
+            DrawDamageText(dc, effect);
             return;
         }
 
@@ -472,71 +484,47 @@ public partial class MainWindow : Window
             ? Math.Max(0, Math.Min(1, effect.RemainingTime / 0.85))
             : Math.Max(0.15, Math.Min(1, effect.RemainingTime / 0.4));
         var brush = CreateBrush(effect.ColorHex, alpha);
+        var center = new Point(effect.Position.X, effect.Position.Y);
 
-        var shape = new Ellipse
+        if (effect.Type == BattleEffectType.Explosion)
         {
-            Width = effect.Radius * 2,
-            Height = effect.Radius * 2,
-            StrokeThickness = effect.Type == BattleEffectType.Explosion ? 4 : 0,
-            Stroke = effect.Type == BattleEffectType.Explosion ? brush : null,
-            Fill = effect.Type == BattleEffectType.Explosion ? CreateBrush(effect.ColorHex, alpha * 0.12) : brush,
-            IsHitTestVisible = false
-        };
+            dc.DrawEllipse(CreateBrush(effect.ColorHex, alpha * 0.12), new Pen(brush, 4), center, effect.Radius, effect.Radius);
+            return;
+        }
 
-        Canvas.SetLeft(shape, effect.Position.X - effect.Radius);
-        Canvas.SetTop(shape, effect.Position.Y - effect.Radius);
-        ArenaCanvas.Children.Add(shape);
+        dc.DrawEllipse(brush, null, center, effect.Radius, effect.Radius);
     }
 
-    private void DrawDamageText(BattleEffect effect)
+    private void DrawDamageText(DrawingContext dc, BattleEffect effect)
     {
         const double lifeTime = 0.8;
         var alpha = Math.Max(0, Math.Min(1, effect.RemainingTime / lifeTime));
         var rise = (1 - alpha) * 46;
+        var brush = CreateBrush(effect.ColorHex, alpha);
+        var text = CreateFormattedText(effect.Text ?? string.Empty, 26, brush, FontWeights.Black);
+        var position = new Point(effect.Position.X - 18, effect.Position.Y - rise);
 
-        var text = new TextBlock
-        {
-            Text = effect.Text ?? string.Empty,
-            Foreground = CreateBrush(effect.ColorHex, alpha),
-            FontSize = 26,
-            FontWeight = FontWeights.Black,
-            IsHitTestVisible = false,
-            Effect = new System.Windows.Media.Effects.DropShadowEffect
-            {
-                BlurRadius = 5,
-                ShadowDepth = 1,
-                Color = Colors.Black,
-                Opacity = alpha
-            }
-        };
-
-        Canvas.SetLeft(text, effect.Position.X - 18);
-        Canvas.SetTop(text, effect.Position.Y - rise);
-        ArenaCanvas.Children.Add(text);
+        dc.DrawText(text, position + new Vector(1, 1));
+        dc.DrawText(CreateFormattedText(effect.Text ?? string.Empty, 26, CreateBrush("#000000", alpha * 0.45), FontWeights.Black), position);
+        dc.DrawText(text, position);
     }
 
-    private void DrawProjectile(BattleProjectile projectile)
+    private void DrawProjectile(DrawingContext dc, BattleProjectile projectile)
     {
+        var brush = CreateImageFill(projectile.TexturePath, projectile.ColorHex);
+        var radius = projectile.Radius;
+        var rect = new Rect(projectile.Position.X - radius, projectile.Position.Y - radius, radius * 2, radius * 2);
         var angleDegrees = Math.Atan2(projectile.Velocity.Y, projectile.Velocity.X) * 180 / Math.PI;
-        var body = new Ellipse
-        {
-            Width = projectile.Radius * 2,
-            Height = projectile.Radius * 2,
-            Fill = CreateImageFill(projectile.TexturePath, projectile.ColorHex),
-            RenderTransformOrigin = new Point(0.5, 0.5),
-            RenderTransform = new RotateTransform(angleDegrees),
-            IsHitTestVisible = false
-        };
 
-        Canvas.SetLeft(body, projectile.Position.X - projectile.Radius);
-        Canvas.SetTop(body, projectile.Position.Y - projectile.Radius);
-        ArenaCanvas.Children.Add(body);
+        dc.PushTransform(new RotateTransform(angleDegrees, projectile.Position.X, projectile.Position.Y));
+        dc.DrawEllipse(brush, null, new Point(projectile.Position.X, projectile.Position.Y), radius, radius);
+        dc.Pop();
     }
 
     /// <summary>
     /// 绘制单个角色，包括贴图身体、技能光圈和头顶血条。
     /// </summary>
-    private void DrawFighter(FighterState fighter)
+    private void DrawFighter(DrawingContext dc, FighterState fighter)
     {
         if (!fighter.IsAlive)
         {
@@ -547,58 +535,51 @@ public partial class MainWindow : Window
         var primaryColor = GetPrimaryColor(fighter.Side);
         var secondaryColor = GetSecondaryColor(fighter.Side);
 
-        // 计算镜像
         var enemy = _world.Fighters.FirstOrDefault(x => x.Id != fighter.Id);
         var shouldMirror = fighter.Definition.isMirror == 1 && enemy is not null;
         var isFlipped = shouldMirror && (enemy!.Position.X - fighter.Position.X) < 0;
 
-        var body = new Ellipse
-        {
-            Width = radius * 2,
-            Height = radius * 2,
-            Fill = CreateImageFill(fighter.Definition.TexturePath, primaryColor),
-            RenderTransformOrigin = new Point(0.5, 0.5),
-            RenderTransform = new ScaleTransform(isFlipped ? -1 : 1, 1),
-            IsHitTestVisible = false
-        };
-
-        DrawWatcherAura(fighter);
+        DrawWatcherAura(dc, fighter);
 
         if (fighter.SkillFlashTime > 0)
         {
             var flashRadius = radius + 10 + (fighter.SkillFlashTime * 14);
-            var aura = new Ellipse
-            {
-                Width = flashRadius * 2,
-                Height = flashRadius * 2,
-                Fill = CreateBrush(secondaryColor, 0.25 + (fighter.SkillFlashTime * 0.7)),
-                IsHitTestVisible = false
-            };
-            Canvas.SetLeft(aura, fighter.Position.X - flashRadius);
-            Canvas.SetTop(aura, fighter.Position.Y - flashRadius);
-            ArenaCanvas.Children.Add(aura);
+            dc.DrawEllipse(
+                CreateBrush(secondaryColor, 0.25 + (fighter.SkillFlashTime * 0.7)),
+                null,
+                new Point(fighter.Position.X, fighter.Position.Y),
+                flashRadius,
+                flashRadius);
         }
+
+        var bodyBrush = CreateImageFill(fighter.Definition.TexturePath, primaryColor);
+        var opacity = fighter.IsSleeping ? 0.5 : 1.0;
+
+        dc.PushOpacity(opacity);
+        if (isFlipped)
+        {
+            dc.PushTransform(new ScaleTransform(-1, 1, fighter.Position.X, fighter.Position.Y));
+        }
+
+        dc.DrawEllipse(bodyBrush, null, new Point(fighter.Position.X, fighter.Position.Y), radius, radius);
+
+        if (isFlipped)
+        {
+            dc.Pop();
+        }
+
+        dc.Pop();
 
         if (fighter.IsSleeping)
         {
-            // 睡眠时变暗
-            body.Opacity = 0.5;
+            DrawSleepZ(dc, fighter);
         }
 
-        Canvas.SetLeft(body, fighter.Position.X - radius);
-        Canvas.SetTop(body, fighter.Position.Y - radius);
-        ArenaCanvas.Children.Add(body);
-
-        if (fighter.IsSleeping)
-        {
-            DrawSleepZ(fighter);
-        }
-
-        DrawArenaHintText(fighter);
-        DrawHealthBarAboveFighter(fighter);
+        DrawArenaHintText(dc, fighter);
+        DrawHealthBarAboveFighter(dc, fighter);
     }
 
-    private void DrawWatcherAura(FighterState fighter)
+    private void DrawWatcherAura(DrawingContext dc, FighterState fighter)
     {
         if (!fighter.Definition.Key.Equals("watcher", StringComparison.OrdinalIgnoreCase))
         {
@@ -622,125 +603,73 @@ public partial class MainWindow : Window
             var height = 7 + ((i % 2) * 2) + (pulse * 1.5);
             var alpha = WatcherSkill.IsAngry(fighter) ? 0.22 : 0.18;
 
-            var spark = new Ellipse
-            {
-                Width = width,
-                Height = height,
-                Fill = CreateBrush(auraColor, alpha),
-                RenderTransformOrigin = new Point(0.5, 0.5),
-                RenderTransform = new RotateTransform((angle * 180 / Math.PI) + 90),
-                IsHitTestVisible = false
-            };
-            Canvas.SetLeft(spark, center.X - (width / 2));
-            Canvas.SetTop(spark, center.Y - (height / 2));
-            ArenaCanvas.Children.Add(spark);
+            dc.PushTransform(new RotateTransform((angle * 180 / Math.PI) + 90, center.X, center.Y));
+            dc.DrawEllipse(CreateBrush(auraColor, alpha), null, new Point(center.X, center.Y), width / 2, height / 2);
+            dc.Pop();
         }
 
         var softGlowRadius = fighter.Definition.Radius + 6;
-        var softGlow = new Ellipse
-        {
-            Width = softGlowRadius * 2,
-            Height = softGlowRadius * 2,
-            Fill = CreateBrush(auraColor, WatcherSkill.IsAngry(fighter) ? 0.11 : 0.09),
-            IsHitTestVisible = false
-        };
-        Canvas.SetLeft(softGlow, fighter.Position.X - softGlowRadius);
-        Canvas.SetTop(softGlow, fighter.Position.Y - softGlowRadius);
-        ArenaCanvas.Children.Add(softGlow);
+        dc.DrawEllipse(
+            CreateBrush(auraColor, WatcherSkill.IsAngry(fighter) ? 0.11 : 0.09),
+            null,
+            new Point(fighter.Position.X, fighter.Position.Y),
+            softGlowRadius,
+            softGlowRadius);
     }
 
     /// <summary>
     /// 绘制角色头顶的睡眠提示文字。
     /// </summary>
-    private void DrawSleepZ(FighterState fighter)
+    private void DrawSleepZ(DrawingContext dc, FighterState fighter)
     {
-        var zText = new TextBlock
-        {
-            Text = "Zzz...",
-            FontSize = 18,
-            FontWeight = FontWeights.Bold,
-            Foreground = CreateBrush(GetSecondaryColor(fighter.Side)),
-            Effect = new System.Windows.Media.Effects.DropShadowEffect
-            {
-                BlurRadius = 3,
-                ShadowDepth = 1,
-                Color = Colors.Black,
-                Opacity = 0.7
-            },
-            IsHitTestVisible = false
-        };
+        var zOffset = (2 - fighter.SleepTime) * 10;
+        var shadow = CreateFormattedText("Zzz...", 18, CreateBrush("#000000", 0.7), FontWeights.Bold);
+        var text = CreateFormattedText("Zzz...", 18, CreateBrush(GetSecondaryColor(fighter.Side)), FontWeights.Bold);
+        var x = fighter.Position.X - (text.Width / 2);
+        var y = fighter.Position.Y - fighter.Definition.Radius - 40 - zOffset;
 
-        zText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var zSize = zText.DesiredSize;
-        var zOffset = (2 - fighter.SleepTime) * 10; // 慢慢向上飘
-        Canvas.SetLeft(zText, fighter.Position.X - zSize.Width / 2);
-        Canvas.SetTop(zText, fighter.Position.Y - fighter.Definition.Radius - 40 - zOffset);
-        ArenaCanvas.Children.Add(zText);
+        dc.DrawText(shadow, new Point(x + 1, y + 1));
+        dc.DrawText(text, new Point(x, y));
     }
 
     /// <summary>
     /// 绘制角色头顶血条。
     /// </summary>
-    private void DrawHealthBarAboveFighter(FighterState fighter)
+    private void DrawHealthBarAboveFighter(DrawingContext dc, FighterState fighter)
     {
         const double width = 70;
         const double height = 6;
         var left = fighter.Position.X - (width / 2);
         var top = fighter.Position.Y - fighter.Definition.Radius - 18;
         var hpRatio = Math.Max(0, fighter.Health / fighter.Definition.HP);
-
-        var background = new Rectangle
-        {
-            Width = width,
-            Height = height,
-            Fill = CreateBrush("#66000000"),
-            IsHitTestVisible = false
-        };
-        Canvas.SetLeft(background, left);
-        Canvas.SetTop(background, top);
-        ArenaCanvas.Children.Add(background);
-
         var barColor = fighter.Side.Equals("left", StringComparison.OrdinalIgnoreCase)
             ? LeftSideColor
             : RightSideColor;
 
-        var foreground = new Rectangle
-        {
-            Width = width * hpRatio,
-            Height = height,
-            Fill = CreateBrush(barColor),
-            IsHitTestVisible = false
-        };
-        Canvas.SetLeft(foreground, left);
-        Canvas.SetTop(foreground, top);
-        ArenaCanvas.Children.Add(foreground);
+        dc.DrawRectangle(CreateBrush("#66000000"), null, new Rect(left, top, width, height));
+        dc.DrawRectangle(CreateBrush(barColor), null, new Rect(left, top, width * hpRatio, height));
     }
 
     /// 绘制召唤物实体与血条。
     /// </summary>
-    private void DrawSummonable(SummonableState summonable)
+    private void DrawSummonable(DrawingContext dc, SummonableState summonable)
     {
         if (!summonable.IsAlive)
         {
             return;
         }
 
-        var body = new Ellipse
-        {
-            Width = summonable.Radius * 2,
-            Height = summonable.Radius * 2,
-            Fill = CreateImageFill(summonable.TexturePath, GetPrimaryColor(summonable.Side)),
-            IsHitTestVisible = false
-        };
+        dc.DrawEllipse(
+            CreateImageFill(summonable.TexturePath, GetPrimaryColor(summonable.Side)),
+            null,
+            new Point(summonable.Position.X, summonable.Position.Y),
+            summonable.Radius,
+            summonable.Radius);
 
-        Canvas.SetLeft(body, summonable.Position.X - summonable.Radius);
-        Canvas.SetTop(body, summonable.Position.Y - summonable.Radius);
-        ArenaCanvas.Children.Add(body);
-
-        DrawHealthBarAboveSummonable(summonable);
+        DrawHealthBarAboveSummonable(dc, summonable);
     }
 
-    private void DrawHealthBarAboveSummonable(SummonableState summonable)
+    private void DrawHealthBarAboveSummonable(DrawingContext dc, SummonableState summonable)
     {
         const double width = 40;
         const double height = 4;
@@ -751,27 +680,8 @@ public partial class MainWindow : Window
             ? LeftSideColor
             : RightSideColor;
 
-        var background = new Rectangle
-        {
-            Width = width,
-            Height = height,
-            Fill = CreateBrush("#66000000"),
-            IsHitTestVisible = false
-        };
-        Canvas.SetLeft(background, left);
-        Canvas.SetTop(background, top);
-        ArenaCanvas.Children.Add(background);
-
-        var foreground = new Rectangle
-        {
-            Width = width * hpRatio,
-            Height = height,
-            Fill = CreateBrush(barColor),
-            IsHitTestVisible = false
-        };
-        Canvas.SetLeft(foreground, left);
-        Canvas.SetTop(foreground, top);
-        ArenaCanvas.Children.Add(foreground);
+        dc.DrawRectangle(CreateBrush("#66000000"), null, new Rect(left, top, width, height));
+        dc.DrawRectangle(CreateBrush(barColor), null, new Rect(left, top, width * hpRatio, height));
     }
 
     private static string GetPrimaryColor(string side)
@@ -790,7 +700,7 @@ public partial class MainWindow : Window
     /// 绘制技能提供的场内提示文字。
     /// 例如 qzd 的蓄力预告，会通过技能接口返回，而不是在窗口类里硬编码角色分支。
     /// </summary>
-    private void DrawArenaHintText(FighterState fighter)
+    private void DrawArenaHintText(DrawingContext dc, FighterState fighter)
     {
         var hintText = GetSkill(fighter).GetArenaHintText(fighter);
         if (string.IsNullOrWhiteSpace(hintText))
@@ -798,28 +708,25 @@ public partial class MainWindow : Window
             return;
         }
 
-        var text = new TextBlock
-        {
-            Text = hintText,
-            Foreground = CreateBrush(GetSecondaryColor(fighter.Side)),
-            FontSize = 14,
-            FontWeight = FontWeights.Bold,
-            TextAlignment = TextAlignment.Center,
-            IsHitTestVisible = false,
-            Effect = new System.Windows.Media.Effects.DropShadowEffect
-            {
-                BlurRadius = 4,
-                ShadowDepth = 1,
-                Color = Colors.Black,
-                Opacity = 0.65
-            }
-        };
+        var shadow = CreateFormattedText(hintText, 14, CreateBrush("#000000", 0.65), FontWeights.Bold);
+        var text = CreateFormattedText(hintText, 14, CreateBrush(GetSecondaryColor(fighter.Side)), FontWeights.Bold);
+        var x = fighter.Position.X - (text.Width / 2);
+        var y = fighter.Position.Y - fighter.Definition.Radius - 40;
 
-        text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var size = text.DesiredSize;
-        Canvas.SetLeft(text, fighter.Position.X - (size.Width / 2));
-        Canvas.SetTop(text, fighter.Position.Y - fighter.Definition.Radius - 40);
-        ArenaCanvas.Children.Add(text);
+        dc.DrawText(shadow, new Point(x + 1, y + 1));
+        dc.DrawText(text, new Point(x, y));
+    }
+
+    private static FormattedText CreateFormattedText(string text, double fontSize, Brush brush, FontWeight fontWeight)
+    {
+        return new FormattedText(
+            text,
+            CultureInfo.CurrentUICulture,
+            FlowDirection.LeftToRight,
+            new Typeface(new FontFamily("Microsoft YaHei UI"), FontStyles.Normal, fontWeight, FontStretches.Normal),
+            fontSize,
+            brush,
+            1.0);
     }
 
     private static string GetSecondaryColor(string side)

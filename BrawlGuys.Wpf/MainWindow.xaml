@@ -12,33 +12,28 @@
         FontFamily="Microsoft YaHei UI"
         Icon="Resources/Images/Icons/app.ico">
     <Window.Resources>
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#202124" />
-        <SolidColorBrush x:Key="TextMutedBrush" Color="#5F6368" />
-        <SolidColorBrush x:Key="TextTitleBrush" Color="#202124" />
-        <SolidColorBrush x:Key="TextSectionBrush" Color="#202124" />
-        <SolidColorBrush x:Key="TextGoodBrush" Color="#1A73E8" />
-        <SolidColorBrush x:Key="TextDangerBrush" Color="#D93025" />
-        <SolidColorBrush x:Key="TextStatusBrush" Color="#B06000" />
-        <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
-        </Style>
-        <Style TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="Background" Value="#FFFFFF" />
-            <Setter Property="Padding" Value="8,6" />
-        </Style>
-        <Style TargetType="ComboBox">
-            <Setter Property="Foreground" Value="#202124" />
-            <Setter Property="Background" Value="#FFFFFF" />
-            <Setter Property="BorderBrush" Value="#DADCE0" />
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="Background" Value="#1A73E8" />
-            <Setter Property="BorderBrush" Value="#1A73E8" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/ControlStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#202124" />
+            <SolidColorBrush x:Key="TextMutedBrush" Color="#5F6368" />
+            <SolidColorBrush x:Key="TextTitleBrush" Color="#202124" />
+            <SolidColorBrush x:Key="TextSectionBrush" Color="#202124" />
+            <SolidColorBrush x:Key="TextGoodBrush" Color="#1A73E8" />
+            <SolidColorBrush x:Key="TextDangerBrush" Color="#D93025" />
+            <SolidColorBrush x:Key="TextStatusBrush" Color="#B06000" />
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
+            </Style>
+            <Style TargetType="Button">
+                <Setter Property="Foreground" Value="#FFFFFF" />
+                <Setter Property="Background" Value="#1A73E8" />
+                <Setter Property="BorderBrush" Value="#1A73E8" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
 
     <Window.Background>
@@ -70,42 +65,17 @@
                     <TextBlock Margin="0,4,0,0"
                                FontSize="13"
                                Foreground="{StaticResource TextMutedBrush}"
-                               Text="v0.2.4-beta" />
+                               Text="v0.2.5-beta" />
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right"
                             Orientation="Horizontal"
                             VerticalAlignment="Bottom">
                     <StackPanel Margin="0,0,12,0">
-                        <TextBlock Margin="0,0,0,6" Foreground="{StaticResource TextMutedBrush}" Text="左方" />
-                        <ComboBox x:Name="LeftFighterCombo"
-                                  Width="100"
-                                  Padding="6"
-                                  Background="#FFFFFF"
-                                  Foreground="#202124"
-                                  BorderBrush="#DADCE0"
-                                  SelectionChanged="FighterSelectionChanged" />
-                    </StackPanel>
-
-                    <StackPanel Margin="0,0,12,0">
-                        <TextBlock Margin="0,0,0,6" Foreground="{StaticResource TextMutedBrush}" Text="右方" />
-                        <ComboBox x:Name="RightFighterCombo"
-                                  Width="100"
-                                  Padding="6"
-                                  Background="#FFFFFF"
-                                  Foreground="#202124"
-                                  BorderBrush="#DADCE0"
-                                  SelectionChanged="FighterSelectionChanged" />
-                    </StackPanel>
-
-                    <StackPanel Margin="0,0,12,0">
                         <TextBlock Margin="0,0,0,6" Foreground="{StaticResource TextMutedBrush}" Text="倍速" />
                         <ComboBox x:Name="SpeedCombo"
-                                  Width="72"
-                                  Padding="6"
-                                  Background="#FFFFFF"
-                                  Foreground="#202124"
-                                  BorderBrush="#DADCE0"
+                                  Width="88"
+                                  Style="{StaticResource ModernComboBoxStyle}"
                                   SelectionChanged="SpeedCombo_SelectionChanged">
                             <ComboBoxItem Content="0.5x" Tag="0.5" />
                             <ComboBoxItem Content="1.0x" Tag="1.0" />
@@ -137,22 +107,12 @@
                     <Button x:Name="RestartButton"
                             Width="80"
                             Height="34"
-                            Margin="0,20,10,0"
+                            Margin="0,20,0,0"
                             Click="RestartButton_OnClick"
                             Background="#FFFFFF"
                             Foreground="#202124"
                             BorderBrush="#DADCE0"
                             Content="重开" />
-
-                    <Button x:Name="BalanceTestButton"
-                            Width="96"
-                            Height="34"
-                            Margin="0,20,0,0"
-                            Click="BalanceTestButton_OnClick"
-                            Background="#FFFFFF"
-                            Foreground="#202124"
-                            BorderBrush="#DADCE0"
-                            Content="平衡性测试" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -221,6 +181,14 @@
                                 BorderThickness="1"
                                 CornerRadius="12">
                             <StackPanel>
+                                <TextBlock Margin="0,0,0,6"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Text="蓝方" />
+                                <ComboBox x:Name="LeftFighterCombo"
+                                          Margin="0,0,0,10"
+                                          Style="{StaticResource ModernComboBoxStyle}"
+                                          SelectionChanged="FighterSelectionChanged" />
                                 <TextBlock x:Name="LeftNameTextBlock"
                                            FontSize="14"
                                            FontWeight="Bold"
@@ -250,6 +218,14 @@
                                 BorderThickness="1"
                                 CornerRadius="12">
                             <StackPanel>
+                                <TextBlock Margin="0,0,0,6"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Text="红方" />
+                                <ComboBox x:Name="RightFighterCombo"
+                                          Margin="0,0,0,10"
+                                          Style="{StaticResource ModernComboBoxStyle}"
+                                          SelectionChanged="FighterSelectionChanged" />
                                 <TextBlock x:Name="RightNameTextBlock"
                                            FontSize="14"
                                            FontWeight="Bold"
@@ -275,13 +251,27 @@
                 </Border>
 
                 <Border x:Name="BottomPlaceholderCard"
-                        Padding="10"
-                        Visibility="Collapsed"
+                        Padding="12"
                         Background="#FFFFFF"
                         BorderBrush="#E0E3E7"
                         BorderThickness="1"
                         CornerRadius="20">
                     <StackPanel>
+                        <TextBlock FontSize="15"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextSectionBrush}"
+                                   Text="平衡性测试" />
+                        <TextBlock Margin="0,4,0,10"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Text="使用 32x 快速模拟，自动进行左右互换对战。" />
+                        <Button x:Name="BalanceTestButton"
+                                Height="38"
+                                Click="BalanceTestButton_OnClick"
+                                Background="#FFFFFF"
+                                Foreground="#202124"
+                                BorderBrush="#DADCE0"
+                                Content="开始 32x 平衡性测试" />
                     </StackPanel>
                 </Border>
             </StackPanel>

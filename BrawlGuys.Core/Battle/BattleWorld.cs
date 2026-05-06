@@ -131,7 +131,12 @@ public sealed class BattleWorld
         bool bounceOnWalls = false,
         bool canBeReclaimedByOwner = false,
         double reclaimHealRatio = 0,
-        bool keepOnFighterHit = false)
+        bool keepOnFighterHit = false,
+        bool splitOnWallImpact = false,
+        bool splitOnUnitImpact = false,
+        int fragmentCount = 0,
+        double fragmentDamageRatio = 0,
+        double fragmentRadiusScale = 1)
     {
         SpawnProjectile(
             owner,
@@ -142,7 +147,12 @@ public sealed class BattleWorld
             bounceOnWalls,
             canBeReclaimedByOwner,
             reclaimHealRatio,
-            keepOnFighterHit);
+            keepOnFighterHit,
+            splitOnWallImpact,
+            splitOnUnitImpact,
+            fragmentCount,
+            fragmentDamageRatio,
+            fragmentRadiusScale);
     }
 
     /// <summary>
@@ -158,7 +168,12 @@ public sealed class BattleWorld
         bool bounceOnWalls = false,
         bool canBeReclaimedByOwner = false,
         double reclaimHealRatio = 0,
-        bool keepOnFighterHit = false)
+        bool keepOnFighterHit = false,
+        bool splitOnWallImpact = false,
+        bool splitOnUnitImpact = false,
+        int fragmentCount = 0,
+        double fragmentDamageRatio = 0,
+        double fragmentRadiusScale = 1)
     {
         var baseDirection = (target.Position - owner.Position).Normalized();
         var direction = ApplyAccuracySpread(baseDirection, owner.Definition.Accuracy);
@@ -172,7 +187,12 @@ public sealed class BattleWorld
             bounceOnWalls,
             canBeReclaimedByOwner,
             reclaimHealRatio,
-            keepOnFighterHit);
+            keepOnFighterHit,
+            splitOnWallImpact,
+            splitOnUnitImpact,
+            fragmentCount,
+            fragmentDamageRatio,
+            fragmentRadiusScale);
     }
 
     public void SpawnProjectileInDirection(
@@ -184,7 +204,12 @@ public sealed class BattleWorld
         bool bounceOnWalls = false,
         bool canBeReclaimedByOwner = false,
         double reclaimHealRatio = 0,
-        bool keepOnFighterHit = false)
+        bool keepOnFighterHit = false,
+        bool splitOnWallImpact = false,
+        bool splitOnUnitImpact = false,
+        int fragmentCount = 0,
+        double fragmentDamageRatio = 0,
+        double fragmentRadiusScale = 1)
     {
         SpawnProjectileInDirection(
             owner,
@@ -196,7 +221,12 @@ public sealed class BattleWorld
             bounceOnWalls,
             canBeReclaimedByOwner,
             reclaimHealRatio,
-            keepOnFighterHit);
+            keepOnFighterHit,
+            splitOnWallImpact,
+            splitOnUnitImpact,
+            fragmentCount,
+            fragmentDamageRatio,
+            fragmentRadiusScale);
     }
 
     /// <summary>
@@ -213,7 +243,12 @@ public sealed class BattleWorld
         bool bounceOnWalls = false,
         bool canBeReclaimedByOwner = false,
         double reclaimHealRatio = 0,
-        bool keepOnFighterHit = false)
+        bool keepOnFighterHit = false,
+        bool splitOnWallImpact = false,
+        bool splitOnUnitImpact = false,
+        int fragmentCount = 0,
+        double fragmentDamageRatio = 0,
+        double fragmentRadiusScale = 1)
     {
         var normalizedDirection = direction.Length <= 0.0001 ? new Vec2(1, 0) : direction.Normalized();
         var spawnPosition = owner.Position + (normalizedDirection * (owner.Definition.Radius + throwable.Radius + 4));
@@ -228,7 +263,12 @@ public sealed class BattleWorld
             bounceOnWalls,
             canBeReclaimedByOwner,
             reclaimHealRatio,
-            keepOnFighterHit));
+            keepOnFighterHit,
+            splitOnWallImpact,
+            splitOnUnitImpact,
+            fragmentCount,
+            fragmentDamageRatio,
+            fragmentRadiusScale));
     }
 
     /// <summary>
@@ -390,7 +430,12 @@ public sealed class BattleWorld
         bool bounceOnWalls = false,
         bool canBeReclaimedByOwner = false,
         double reclaimHealRatio = 0,
-        bool keepOnFighterHit = false)
+        bool keepOnFighterHit = false,
+        bool splitOnWallImpact = false,
+        bool splitOnUnitImpact = false,
+        int fragmentCount = 0,
+        double fragmentDamageRatio = 0,
+        double fragmentRadiusScale = 1)
     {
         return new BattleProjectile
         {
@@ -409,7 +454,12 @@ public sealed class BattleWorld
             BounceOnWalls = bounceOnWalls,
             CanBeReclaimedByOwner = canBeReclaimedByOwner,
             ReclaimHealRatio = reclaimHealRatio,
-            KeepOnFighterHit = keepOnFighterHit
+            KeepOnFighterHit = keepOnFighterHit,
+            SplitOnWallImpact = splitOnWallImpact,
+            SplitOnUnitImpact = splitOnUnitImpact,
+            FragmentCount = Math.Max(0, fragmentCount),
+            FragmentDamageRatio = Math.Max(0, fragmentDamageRatio),
+            FragmentRadiusScale = Math.Max(0.1, fragmentRadiusScale)
         };
     }
 
@@ -747,7 +797,9 @@ public sealed class BattleWorld
             }
             else if (IsProjectileHitWall(projectile))
             {
+                var wallNormal = GetWallImpactNormal(projectile);
                 SpawnImpact(projectile.Position, projectile.ColorHex);
+                SpawnFragmentsFromProjectile(projectile, wallNormal, projectile.SplitOnWallImpact);
                 Projectiles.RemoveAt(i);
                 continue;
             }
@@ -772,6 +824,8 @@ public sealed class BattleWorld
                         SpawnExplosion(hitSummonable.Position, GetPrimaryColor(hitSummonable.Side));
                         Summonables.Remove(hitSummonable);
                     }
+
+                    SpawnFragmentsFromProjectile(projectile, GetUnitImpactNormal(projectile, hitSummonable.Position), projectile.SplitOnUnitImpact);
 
                     if (projectile.KeepOnFighterHit)
                     {
@@ -807,6 +861,7 @@ public sealed class BattleWorld
                 }
 
                 SpawnImpact(projectile.Position, projectile.ColorHex);
+                SpawnFragmentsFromProjectile(projectile, GetUnitImpactNormal(projectile, target.Position), projectile.SplitOnUnitImpact);
                 if (projectile.KeepOnFighterHit)
                 {
                     BounceProjectileOnFighter(projectile, target);
@@ -823,6 +878,98 @@ public sealed class BattleWorld
                 Projectiles.RemoveAt(i);
             }
         }
+    }
+
+    private void SpawnFragmentsFromProjectile(BattleProjectile projectile, Vec2 impactNormal, bool shouldSplit)
+    {
+        if (!shouldSplit
+            || projectile.FragmentCount <= 0
+            || projectile.FragmentDamageRatio <= 0)
+        {
+            return;
+        }
+
+        var normal = impactNormal.Length <= 0.0001
+            ? (projectile.Velocity.Length <= 0.0001 ? new Vec2(1, 0) : projectile.Velocity.Normalized())
+            : impactNormal.Normalized();
+        var baseAngle = Math.Atan2(normal.Y, normal.X);
+        var count = Math.Max(1, projectile.FragmentCount);
+        var speed = Math.Max(projectile.Velocity.Length, 1);
+        var fragmentRadius = Math.Max(6, projectile.Radius * projectile.FragmentRadiusScale);
+        var fragmentDamage = projectile.Damage * projectile.FragmentDamageRatio;
+
+        for (var fragmentIndex = 0; fragmentIndex < count; fragmentIndex++)
+        {
+            var angle = baseAngle + ((Math.PI * 2 * fragmentIndex) / count);
+            var direction = new Vec2(Math.Cos(angle), Math.Sin(angle));
+            var spawnPosition = projectile.Position + (direction * (fragmentRadius + 2));
+
+            Projectiles.Add(new BattleProjectile
+            {
+                Id = $"projectile-{Guid.NewGuid():N}"[..24],
+                OwnerId = projectile.OwnerId,
+                TargetId = projectile.TargetId,
+                TexturePath = projectile.TexturePath,
+                Position = spawnPosition,
+                Velocity = direction * speed,
+                Radius = fragmentRadius,
+                Damage = fragmentDamage,
+                ColorHex = projectile.ColorHex,
+                CanSleepTarget = false,
+                SleepDuration = 0,
+                DealDamageOnlyIfTargetSleeping = false,
+                BounceOnWalls = false,
+                CanBeReclaimedByOwner = false,
+                ReclaimHealRatio = 0,
+                KeepOnFighterHit = false,
+                SplitOnWallImpact = false,
+                SplitOnUnitImpact = false,
+                FragmentCount = 0,
+                FragmentDamageRatio = 0,
+                FragmentRadiusScale = 1
+            });
+        }
+    }
+
+    private Vec2 GetWallImpactNormal(BattleProjectile projectile)
+    {
+        var position = projectile.Position;
+        var radius = projectile.Radius;
+
+        if (position.X - radius < 0)
+        {
+            return new Vec2(1, 0);
+        }
+
+        if (position.X + radius > ArenaWidth)
+        {
+            return new Vec2(-1, 0);
+        }
+
+        if (position.Y - radius < 0)
+        {
+            return new Vec2(0, 1);
+        }
+
+        if (position.Y + radius > ArenaHeight)
+        {
+            return new Vec2(0, -1);
+        }
+
+        return projectile.Velocity.Length <= 0.0001 ? new Vec2(1, 0) : projectile.Velocity.Normalized();
+    }
+
+    private static Vec2 GetUnitImpactNormal(BattleProjectile projectile, Vec2 targetPosition)
+    {
+        var hitNormal = (projectile.Position - targetPosition).Normalized();
+        if (hitNormal.Length <= 0.0001)
+        {
+            hitNormal = projectile.Velocity.Length <= 0.0001
+                ? new Vec2(1, 0)
+                : projectile.Velocity.Normalized();
+        }
+
+        return hitNormal;
     }
 
     private void CheckResult()

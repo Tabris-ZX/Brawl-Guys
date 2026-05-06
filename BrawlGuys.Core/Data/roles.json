@@ -5,10 +5,10 @@
     "desc": "阿巴的贝尔",
     "texturePath": "roles/drunkard.png",
     "radius": 50,
-    "HP": 1060,
+    "HP": 1080,
     "Speed": 150,
     "CD": 3.0,
-    "Accuracy": 76,
+    "Accuracy": 70,
     "isMirror": 1
   },
   {
@@ -30,7 +30,7 @@
     "texturePath": "roles/shooter.png",
     "radius": 50,
     "HP": 960,
-    "Speed": 180,
+    "Speed": 185,
     "CD": 4.0,
     "Accuracy": 90,
     "isMirror": 0
@@ -41,7 +41,7 @@
     "desc": "麦克阿杰",
     "texturePath": "roles/lijie.png",
     "radius": 50,
-    "HP": 970,
+    "HP": 980,
     "Speed": 150,
     "CD": 6.0,
     "Accuracy": 95,

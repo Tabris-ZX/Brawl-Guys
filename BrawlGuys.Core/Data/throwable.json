@@ -3,9 +3,9 @@
     "key": "drunkard",
     "name": "酒瓶",
     "texturePath": "throwable/bottle.png",
-    "Speed": 450,
-    "radius": 40,
-    "damage": 90,
+    "Speed": 480,
+    "radius": 36,
+    "damage": 56,
     "colorHex": "#A97942"
   },
   {
