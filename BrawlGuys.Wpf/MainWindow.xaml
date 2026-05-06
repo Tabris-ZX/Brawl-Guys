@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="FightingGuys"
-        Width="900"
-        Height="775"
-        MinWidth="900"
-        MinHeight="775"
+        Width="1000"
+        Height="800"
+        MinWidth="1000"
+        MinHeight="800"
         FontFamily="Microsoft YaHei UI"
         Icon="Resources/Images/Icons/app.ico">
     <Window.Resources>
@@ -65,7 +65,7 @@
                     <TextBlock Margin="0,4,0,0"
                                FontSize="13"
                                Foreground="{StaticResource TextMutedBrush}"
-                               Text="v0.2.5-beta" />
+                               Text="v0.3.2-beta" />
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right"
@@ -84,6 +84,16 @@
                         </ComboBox>
                     </StackPanel>
                     
+                    <Button x:Name="ModeToggleButton"
+                            Width="86"
+                            Height="34"
+                            Margin="0,20,10,0"
+                            Click="ModeToggleButton_OnClick"
+                            Background="#FFFFFF"
+                            Foreground="#202124"
+                            BorderBrush="#DADCE0"
+                            Content="切换2v2" />
+
                     <Button x:Name="ThemeToggleButton"
                             Width="72"
                             Height="34"
@@ -117,15 +127,17 @@
             </DockPanel>
         </Border>
 
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="300" />
             </Grid.ColumnDefinitions>
 
             <Border x:Name="ArenaOuterBorder" Grid.Column="0"
                     Margin="0,0,12,0"
                     Padding="0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
                     Background="#4285F4"
                     BorderBrush="#AECBFA"
                     BorderThickness="1"
@@ -143,7 +155,10 @@
                 </Border>
             </Border>
 
-            <StackPanel Grid.Column="1">
+            <ScrollViewer Grid.Column="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
                 <Border x:Name="InfoPanelCard"
                         Margin="0,0,0,10"
                         Padding="12"
@@ -185,13 +200,27 @@
                                            FontSize="12"
                                            Foreground="{StaticResource TextMutedBrush}"
                                            Text="蓝方" />
-                                <ComboBox x:Name="LeftFighterCombo"
-                                          Margin="0,0,0,10"
-                                          Style="{StaticResource ModernComboBoxStyle}"
-                                          SelectionChanged="FighterSelectionChanged" />
+                                <Grid x:Name="LeftFighterComboGrid" Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox x:Name="LeftFighterCombo"
+                                              Grid.Column="0"
+                                              Style="{StaticResource ModernComboBoxStyle}"
+                                              SelectionChanged="FighterSelectionChanged" />
+                                    <ComboBox x:Name="LeftFighterCombo2"
+                                              Grid.Column="1"
+                                              Margin="8,0,0,0"
+                                              Style="{StaticResource ModernComboBoxStyle}"
+                                              Visibility="Collapsed"
+                                              SelectionChanged="FighterSelectionChanged" />
+                                </Grid>
                                 <TextBlock x:Name="LeftNameTextBlock"
                                            FontSize="14"
                                            FontWeight="Bold"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
                                            Foreground="{StaticResource TextGoodBrush}" />
                                 <ProgressBar x:Name="LeftHealthBar"
                                              Height="12"
@@ -222,13 +251,27 @@
                                            FontSize="12"
                                            Foreground="{StaticResource TextMutedBrush}"
                                            Text="红方" />
-                                <ComboBox x:Name="RightFighterCombo"
-                                          Margin="0,0,0,10"
-                                          Style="{StaticResource ModernComboBoxStyle}"
-                                          SelectionChanged="FighterSelectionChanged" />
+                                <Grid x:Name="RightFighterComboGrid" Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox x:Name="RightFighterCombo"
+                                              Grid.Column="0"
+                                              Style="{StaticResource ModernComboBoxStyle}"
+                                              SelectionChanged="FighterSelectionChanged" />
+                                    <ComboBox x:Name="RightFighterCombo2"
+                                              Grid.Column="1"
+                                              Margin="8,0,0,0"
+                                              Style="{StaticResource ModernComboBoxStyle}"
+                                              Visibility="Collapsed"
+                                              SelectionChanged="FighterSelectionChanged" />
+                                </Grid>
                                 <TextBlock x:Name="RightNameTextBlock"
                                            FontSize="14"
                                            FontWeight="Bold"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
                                            Foreground="{StaticResource TextDangerBrush}" />
                                 <ProgressBar x:Name="RightHealthBar"
                                              Height="12"
@@ -264,17 +307,18 @@
                         <TextBlock Margin="0,4,0,10"
                                    FontSize="12"
                                    Foreground="{StaticResource TextMutedBrush}"
-                                   Text="使用 32x 快速模拟，自动进行左右互换对战。" />
+                                   Text="使用 64x 快速模拟，自动进行左右互换对战。" />
                         <Button x:Name="BalanceTestButton"
                                 Height="38"
                                 Click="BalanceTestButton_OnClick"
                                 Background="#FFFFFF"
                                 Foreground="#202124"
                                 BorderBrush="#DADCE0"
-                                Content="开始 32x 平衡性测试" />
+                                Content="开始 64x 平衡性测试" />
                     </StackPanel>
                 </Border>
             </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>

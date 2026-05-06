@@ -48,9 +48,9 @@ public sealed class BattleProjectile
     public required double Damage { get; init; }
 
     /// <summary>
-    /// 贴图缺失时使用的回退颜色，也是特效颜色来源。
+    /// 发射者阵营，用于表现层按红/蓝阵营色绘制投掷物和命中特效。
     /// </summary>
-    public required string ColorHex { get; init; }
+    public required string Side { get; init; }
 
     /// <summary>
     /// 是否能让目标进入睡眠。

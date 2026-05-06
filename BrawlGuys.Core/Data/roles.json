@@ -9,7 +9,7 @@
     "Speed": 150,
     "CD": 3.0,
     "Accuracy": 70,
-    "isMirror": 1
+    "IsMirror": 1
   },
   {
     "key": "angry-man",
@@ -21,7 +21,7 @@
     "Speed": 160,
     "CD": 2.0,
     "Accuracy": 80,
-    "isMirror": 1
+    "IsMirror": 1
   },
   {
     "key": "shooter",
@@ -33,7 +33,7 @@
     "Speed": 185,
     "CD": 4.0,
     "Accuracy": 90,
-    "isMirror": 0
+    "IsMirror": 0
   },
   {
     "key": "lijie",
@@ -45,7 +45,7 @@
     "Speed": 150,
     "CD": 6.0,
     "Accuracy": 95,
-    "isMirror": 0
+    "IsMirror": 0
   },
   {
     "key": "qzd",
@@ -57,11 +57,11 @@
     "Speed": 145,
     "CD": 9.0,
     "Accuracy": 50,
-    "isMirror": 1
+    "IsMirror": 1
   },
   {
     "key": "lq",
-    "name": "李强",
+    "name": "强哥",
     "desc": "物理课 !?强强?!",
     "texturePath": "roles/lq.png",
     "radius": 50,
@@ -69,7 +69,7 @@
     "Speed": 160,
     "CD": 4.5,
     "Accuracy": 70,
-    "isMirror": 1
+    "IsMirror": 1
   },
   {
     "key": "reflector",
@@ -81,7 +81,7 @@
     "Speed": 150,
     "CD": 4.0,
     "Accuracy": 100,
-    "isMirror": 0
+    "IsMirror": 1
   },
   {
     "key": "ikun",
@@ -91,9 +91,9 @@
     "radius": 50,
     "HP": 925,
     "Speed": 180,
-    "CD": 3,
+    "CD": 3.0,
     "Accuracy": 90,
-    "isMirror": 1
+    "IsMirror": 1
   },
   {
     "key": "watcher",
@@ -105,6 +105,6 @@
     "Speed": 175,
     "CD": 2.4,
     "Accuracy": 84,
-    "isMirror": 1
+    "IsMirror": 1
   }
 ]

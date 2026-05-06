@@ -72,6 +72,14 @@ public sealed class BattleWorld
     /// </summary>
     public void StartMatch(string leftKey, string rightKey)
     {
+        StartMatch(new[] { leftKey }, new[] { rightKey });
+    }
+
+    /// <summary>
+    /// 开始一局团队比赛。每边可以有一名或多名角色。
+    /// </summary>
+    public void StartMatch(IReadOnlyList<string> leftKeys, IReadOnlyList<string> rightKeys)
+    {
         Fighters.Clear();
         Summonables.Clear();
         Projectiles.Clear();
@@ -81,26 +89,20 @@ public sealed class BattleWorld
         ElapsedTime = 0;
         StatusText = "战斗中";
 
-        var leftDefinition = FighterCatalog.Get(leftKey);
-        var rightDefinition = FighterCatalog.Get(rightKey);
+        var safeLeftKeys = leftKeys.Count == 0 ? new[] { "drunkard" } : leftKeys;
+        var safeRightKeys = rightKeys.Count == 0 ? new[] { "angry-man" } : rightKeys;
 
-        var left = CreateFighter(
-            leftDefinition,
-            "left",
-            new Vec2(BattleTuning.FighterSidePadding, ArenaHeight / 2),
-            CreateRandomVelocity(leftDefinition));
+        AddTeamFighters(safeLeftKeys, "left");
+        AddTeamFighters(safeRightKeys, "right");
 
-        var right = CreateFighter(
-            rightDefinition,
-            "right",
-            new Vec2(ArenaWidth - BattleTuning.FighterSidePadding, ArenaHeight / 2),
-            CreateRandomVelocity(rightDefinition));
-
-        Fighters.Add(left);
-        Fighters.Add(right);
-
-        InitializeFighterForMatch(left, right);
-        InitializeFighterForMatch(right, left);
+        foreach (var fighter in Fighters)
+        {
+            var enemy = FindNearestEnemyFighter(fighter.Side, fighter.Position);
+            if (enemy is not null)
+            {
+                InitializeFighterForMatch(fighter, enemy);
+            }
+        }
     }
 
     /// <summary>
@@ -254,6 +256,7 @@ public sealed class BattleWorld
         var spawnPosition = owner.Position + (normalizedDirection * (owner.Definition.Radius + throwable.Radius + 4));
         Projectiles.Add(CreateProjectile(
             owner.Id,
+            owner.Side,
             target.Id,
             spawnPosition,
             normalizedDirection * throwable.Speed,
@@ -290,6 +293,7 @@ public sealed class BattleWorld
         var spawnPosition = owner.Position + (direction * (owner.Radius + throwable.Radius + 4));
         Projectiles.Add(CreateProjectile(
             owner.Id,
+            owner.Side,
             target.Id,
             spawnPosition,
             direction * throwable.Speed,
@@ -405,13 +409,18 @@ public sealed class BattleWorld
 
         if (Winner is null && !IsDraw)
         {
-            var left = Fighters[0];
-            var right = Fighters[1];
+            for (var i = 0; i < Fighters.Count; i++)
+            {
+                var fighter = Fighters[i];
+                var enemy = FindNearestEnemyFighter(fighter.Side, fighter.Position);
+                if (enemy is not null)
+                {
+                    UpdateFighter(fighter, enemy, dt);
+                }
+            }
 
-            UpdateFighter(left, right, dt);
-            UpdateFighter(right, left, dt);
             UpdateSummonables(dt);
-            ResolveFighterCollision(left, right);
+            ResolveAllFighterCollisions();
             UpdateProjectiles(dt);
             CheckResult();
         }
@@ -421,6 +430,7 @@ public sealed class BattleWorld
 
     private BattleProjectile CreateProjectile(
         string ownerId,
+        string ownerSide,
         string targetId,
         Vec2 position,
         Vec2 velocity,
@@ -441,13 +451,13 @@ public sealed class BattleWorld
         {
             Id = $"projectile-{Guid.NewGuid():N}"[..24],
             OwnerId = ownerId,
+            Side = ownerSide,
             TargetId = targetId,
             TexturePath = throwable.TexturePath,
             Position = position,
             Velocity = velocity,
             Radius = throwable.Radius,
             Damage = damageOverride ?? throwable.Damage,
-            ColorHex = throwable.ColorHex,
             CanSleepTarget = throwable.CanSleepTarget,
             SleepDuration = throwable.SleepDuration,
             DealDamageOnlyIfTargetSleeping = dealDamageOnlyIfTargetSleeping,
@@ -466,6 +476,25 @@ public sealed class BattleWorld
     private void InitializeFighterForMatch(FighterState fighter, FighterState enemy)
     {
         GetSkill(fighter).OnMatchStarted(this, fighter, enemy);
+    }
+
+    private void AddTeamFighters(IReadOnlyList<string> fighterKeys, string side)
+    {
+        var count = Math.Max(1, fighterKeys.Count);
+        for (var i = 0; i < count; i++)
+        {
+            var definition = FighterCatalog.Get(fighterKeys[i]);
+            var x = side.Equals("left", StringComparison.OrdinalIgnoreCase)
+                ? BattleTuning.FighterSidePadding
+                : ArenaWidth - BattleTuning.FighterSidePadding;
+            var y = ArenaHeight * (i + 1) / (count + 1);
+
+            Fighters.Add(CreateFighter(
+                definition,
+                side,
+                new Vec2(x, y),
+                CreateRandomVelocity(definition)));
+        }
     }
 
     private FighterState CreateFighter(FighterDefinition definition, string side, Vec2 position, Vec2 velocity)
@@ -670,6 +699,17 @@ public sealed class BattleWorld
         b.Velocity += impulse;
     }
 
+    private void ResolveAllFighterCollisions()
+    {
+        for (var i = 0; i < Fighters.Count; i++)
+        {
+            for (var j = i + 1; j < Fighters.Count; j++)
+            {
+                ResolveFighterCollision(Fighters[i], Fighters[j]);
+            }
+        }
+    }
+
     /// <summary>
     /// 防止角色因为外部速度修改过小而停住。
     /// </summary>
@@ -750,7 +790,6 @@ public sealed class BattleWorld
                 Speed = definition.ProjectileSpeed!.Value,
                 Radius = definition.ProjectileRadius!.Value,
                 Damage = definition.ProjectileDamage!.Value,
-                ColorHex = definition.ProjectileColorHex!,
                 CanSleepTarget = definition.ProjectileCanSleepTarget,
                 SleepDuration = definition.ProjectileSleepDuration
             };
@@ -786,7 +825,7 @@ public sealed class BattleWorld
             {
                 owner.Health = Math.Min(owner.Definition.HP, owner.Health + (projectile.Damage * projectile.ReclaimHealRatio));
                 GetSkill(owner).OnProjectileReclaimed(this, owner, projectile);
-                SpawnImpact(projectile.Position, projectile.ColorHex);
+                SpawnImpact(projectile.Position, GetPrimaryColor(projectile.Side));
                 Projectiles.RemoveAt(i);
                 continue;
             }
@@ -798,7 +837,7 @@ public sealed class BattleWorld
             else if (IsProjectileHitWall(projectile))
             {
                 var wallNormal = GetWallImpactNormal(projectile);
-                SpawnImpact(projectile.Position, projectile.ColorHex);
+                SpawnImpact(projectile.Position, GetPrimaryColor(projectile.Side));
                 SpawnFragmentsFromProjectile(projectile, wallNormal, projectile.SplitOnWallImpact);
                 Projectiles.RemoveAt(i);
                 continue;
@@ -817,7 +856,7 @@ public sealed class BattleWorld
                 if (hitSummonable is not null)
                 {
                     hitSummonable.Health -= projectile.Damage;
-                    SpawnImpact(projectile.Position, projectile.ColorHex);
+                    SpawnImpact(projectile.Position, GetPrimaryColor(projectile.Side));
                     SpawnDamageText(hitSummonable.Position, projectile.Damage, hitSummonable.Side);
                     if (!hitSummonable.IsAlive)
                     {
@@ -839,8 +878,8 @@ public sealed class BattleWorld
                 }
             }
 
-            var target = Fighters.FirstOrDefault(x => x.Id == projectile.TargetId);
-            if (target is not null && target.IsAlive && IsProjectileHit(projectile, target))
+            var target = FindProjectileHitFighter(projectile, ownerSide);
+            if (target is not null)
             {
                 var canDealDamage = !projectile.DealDamageOnlyIfTargetSleeping || target.IsSleeping;
                 if (canDealDamage)
@@ -860,7 +899,7 @@ public sealed class BattleWorld
                     target.SleepTime = Math.Max(target.SleepTime, projectile.SleepDuration);
                 }
 
-                SpawnImpact(projectile.Position, projectile.ColorHex);
+                SpawnImpact(projectile.Position, GetPrimaryColor(projectile.Side));
                 SpawnFragmentsFromProjectile(projectile, GetUnitImpactNormal(projectile, target.Position), projectile.SplitOnUnitImpact);
                 if (projectile.KeepOnFighterHit)
                 {
@@ -878,6 +917,22 @@ public sealed class BattleWorld
                 Projectiles.RemoveAt(i);
             }
         }
+    }
+
+    private FighterState? FindProjectileHitFighter(BattleProjectile projectile, string? ownerSide)
+    {
+        if (string.IsNullOrWhiteSpace(ownerSide))
+        {
+            var lockedTarget = Fighters.FirstOrDefault(x => x.Id == projectile.TargetId);
+            return lockedTarget is not null && lockedTarget.IsAlive && IsProjectileHit(projectile, lockedTarget)
+                ? lockedTarget
+                : null;
+        }
+
+        return Fighters
+            .Where(x => x.IsAlive && !x.Side.Equals(ownerSide, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(x => (x.Position - projectile.Position).Length)
+            .FirstOrDefault(x => IsProjectileHit(projectile, x));
     }
 
     private void SpawnFragmentsFromProjectile(BattleProjectile projectile, Vec2 impactNormal, bool shouldSplit)
@@ -908,13 +963,13 @@ public sealed class BattleWorld
             {
                 Id = $"projectile-{Guid.NewGuid():N}"[..24],
                 OwnerId = projectile.OwnerId,
+                Side = projectile.Side,
                 TargetId = projectile.TargetId,
                 TexturePath = projectile.TexturePath,
                 Position = spawnPosition,
                 Velocity = direction * speed,
                 Radius = fragmentRadius,
                 Damage = fragmentDamage,
-                ColorHex = projectile.ColorHex,
                 CanSleepTarget = false,
                 SleepDuration = 0,
                 DealDamageOnlyIfTargetSleeping = false,
@@ -974,30 +1029,34 @@ public sealed class BattleWorld
 
     private void CheckResult()
     {
-        var alive = Fighters.Where(x => x.IsAlive).ToList();
-        if (alive.Count == 2)
+        var leftAlive = Fighters.Where(x => x.IsAlive && x.Side.Equals("left", StringComparison.OrdinalIgnoreCase)).ToList();
+        var rightAlive = Fighters.Where(x => x.IsAlive && x.Side.Equals("right", StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (leftAlive.Count > 0 && rightAlive.Count > 0)
         {
             return;
         }
 
-        if (alive.Count == 1)
-        {
-            Winner = alive[0];
-            foreach (var dead in Fighters.Where(x => !x.IsAlive))
-            {
-                SpawnExplosion(dead.Position, GetPrimaryColor(dead.Side));
-            }
-
-            StatusText = $"{Winner.Definition.Name} 获胜！";
-            return;
-        }
-
-        IsDraw = true;
         foreach (var dead in Fighters.Where(x => !x.IsAlive))
         {
             SpawnExplosion(dead.Position, GetPrimaryColor(dead.Side));
         }
 
+        if (leftAlive.Count > 0)
+        {
+            Winner = leftAlive[0];
+            StatusText = "蓝方获胜！";
+            return;
+        }
+
+        if (rightAlive.Count > 0)
+        {
+            Winner = rightAlive[0];
+            StatusText = "红方获胜！";
+            return;
+        }
+
+        IsDraw = true;
         StatusText = "双败平局！";
     }
 

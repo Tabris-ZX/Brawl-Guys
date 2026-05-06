@@ -23,9 +23,6 @@ public sealed class ThrowableDefinition
     /// <summary>命中伤害。</summary>
     public required double Damage { get; init; }
 
-    /// <summary>贴图缺失时的回退颜色。</summary>
-    public required string ColorHex { get; init; }
-
     /// <summary>若该投掷物还承担召唤物配置，则这里表示召唤物贴图。</summary>
     public string? UnitTexturePath { get; init; }
 

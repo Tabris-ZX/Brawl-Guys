@@ -35,7 +35,7 @@ public sealed class FighterDefinition
     public required double Accuracy { get; init; }
 
     /// <summary>是否根据对方位置镜像翻转贴图。1=会翻转,0=保持原样。</summary>
-    public int isMirror { get; init; }
+    public int IsMirror { get; init; }
 
     /// <summary>角色默认投掷物贴图。新角色推荐直接写在 roles.json 里。</summary>
     public string? ProjectileTexturePath { get; init; }
@@ -49,9 +49,6 @@ public sealed class FighterDefinition
     /// <summary>角色默认投掷物伤害。</summary>
     public double? ProjectileDamage { get; init; }
 
-    /// <summary>角色默认投掷物颜色。</summary>
-    public string? ProjectileColorHex { get; init; }
-
     /// <summary>角色默认投掷物是否附带睡眠效果。</summary>
     public bool ProjectileCanSleepTarget { get; init; }
 
@@ -61,6 +58,5 @@ public sealed class FighterDefinition
     public bool HasInlineProjectileDefinition => !string.IsNullOrWhiteSpace(ProjectileTexturePath)
         && ProjectileSpeed is not null
         && ProjectileRadius is not null
-        && ProjectileDamage is not null
-        && !string.IsNullOrWhiteSpace(ProjectileColorHex);
+        && ProjectileDamage is not null;
 }

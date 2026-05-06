@@ -63,8 +63,7 @@ public static class FighterCatalog
             && (!string.IsNullOrWhiteSpace(x.ProjectileTexturePath)
                 || x.ProjectileSpeed is not null
                 || x.ProjectileRadius is not null
-                || x.ProjectileDamage is not null
-                || !string.IsNullOrWhiteSpace(x.ProjectileColorHex)));
+                || x.ProjectileDamage is not null));
 
         if (invalidInlineProjectile is not null)
         {
