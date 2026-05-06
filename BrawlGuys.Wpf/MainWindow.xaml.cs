@@ -132,410 +132,152 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 平衡性测试入口：在后台线程以 64x 速度模拟大量 1v1 对局。
-    /// 测试分为两半：第一半保持当前左右站位，第二半交换左右站位，避免出生位置偏差影响结论。
+    /// 平衡性测试入口：在后台线程以 64x 速度模拟“当前选中角色 vs 所有其它角色”。
+    /// 每个对手的对战场数可在 UI 中配置，并会自动拆分为原始站位和左右互换两部分。
     /// </summary>
     private async void BalanceTestButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isBalanceTesting || _isTwoVsTwoMode) return;
 
+        if (!TryGetBalanceMatchCount(out var matchesPerOpponent))
+        {
+            MessageBox.Show(this, "请输入 2 到 20000 之间的对战场数。", "平衡性测试", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         _isBalanceTesting = true;
         BalanceTestButton.IsEnabled = false;
+        BalanceTestButton.Content = "测试中...";
 
         try
         {
-            var leftKey = LeftFighterCombo.SelectedValue as string ?? "drunkard";
-            var rightKey = RightFighterCombo.SelectedValue as string ?? "angry-man";
-            var leftName = (LeftFighterCombo.SelectedItem as FighterDefinition)?.Name ?? leftKey;
-            var rightName = (RightFighterCombo.SelectedItem as FighterDefinition)?.Name ?? rightKey;
-            const int halfMatches = 500;
-            const int totalMatches = halfMatches * 2;
-            const double simulationSpeed = 64.0;
-            const double baseDt = 1.0 / 60.0;
-            const double maxSimulatedSecondsPerMatch = 120;
+            var subjectKey = LeftFighterCombo.SelectedValue as string ?? "drunkard";
+            var subjectName = (LeftFighterCombo.SelectedItem as FighterDefinition)?.Name ?? subjectKey;
+            StatusTextBlock.Text = $"正在测试 {subjectName} 与所有其它角色...";
 
-            var result = await System.Threading.Tasks.Task.Run(() =>
-            {
-                var firstHalfLeftWins = 0;
-                var firstHalfRightWins = 0;
-                var firstHalfDraws = 0;
+            var summary = await System.Threading.Tasks.Task.Run(() => SimulateBalanceAgainstAll(subjectKey, matchesPerOpponent));
 
-                var secondHalfLeftWins = 0;
-                var secondHalfRightWins = 0;
-                var secondHalfDraws = 0;
-
-                for (var match = 0; match < halfMatches; match++)
-                {
-                    var simWorld = new BattleWorld();
-                    simWorld.StartMatch(leftKey, rightKey);
-
-                    var elapsed = 0.0;
-                    while (simWorld.Winner is null && !simWorld.IsDraw && elapsed < maxSimulatedSecondsPerMatch)
-                    {
-                        simWorld.Update(baseDt * simulationSpeed);
-                        elapsed += baseDt * simulationSpeed;
-                    }
-
-                    if (simWorld.Winner is null || simWorld.IsDraw)
-                    {
-                        firstHalfDraws++;
-                    }
-                    else if (simWorld.Winner.Side.Equals("left", StringComparison.OrdinalIgnoreCase))
-                    {
-                        firstHalfLeftWins++;
-                    }
-                    else
-                    {
-                        firstHalfRightWins++;
-                    }
-                }
-
-                for (var match = 0; match < halfMatches; match++)
-                {
-                    var simWorld = new BattleWorld();
-                    simWorld.StartMatch(rightKey, leftKey);
-
-                    var elapsed = 0.0;
-                    while (simWorld.Winner is null && !simWorld.IsDraw && elapsed < maxSimulatedSecondsPerMatch)
-                    {
-                        simWorld.Update(baseDt * simulationSpeed);
-                        elapsed += baseDt * simulationSpeed;
-                    }
-
-                    if (simWorld.Winner is null || simWorld.IsDraw)
-                    {
-                        secondHalfDraws++;
-                    }
-                    else if (simWorld.Winner.Side.Equals("left", StringComparison.OrdinalIgnoreCase))
-                    {
-                        secondHalfRightWins++;
-                    }
-                    else
-                    {
-                        secondHalfLeftWins++;
-                    }
-                }
-
-                var leftTotalWins = firstHalfLeftWins + secondHalfLeftWins;
-                var rightTotalWins = firstHalfRightWins + secondHalfRightWins;
-                var totalDraws = firstHalfDraws + secondHalfDraws;
-
-                return (
-                    firstHalfLeftWins,
-                    firstHalfRightWins,
-                    firstHalfDraws,
-                    secondHalfLeftWins,
-                    secondHalfRightWins,
-                    secondHalfDraws,
-                    leftTotalWins,
-                    rightTotalWins,
-                    totalDraws);
-            });
-
-            StatusTextBlock.Text = $"测试完成：{leftName} 总胜 {result.leftTotalWins} / {rightName} 总胜 {result.rightTotalWins} / 平局 {result.totalDraws}";
-            ShowBalanceTestResultDialog(
-                leftName,
-                rightName,
-                totalMatches,
-                result.firstHalfLeftWins,
-                result.firstHalfRightWins,
-                result.firstHalfDraws,
-                result.secondHalfLeftWins,
-                result.secondHalfRightWins,
-                result.secondHalfDraws,
-                result.leftTotalWins,
-                result.rightTotalWins,
-                result.totalDraws);
+            StatusTextBlock.Text = $"测试完成：{summary.SubjectName} 总胜 {summary.TotalSubjectWins} / 对手总胜 {summary.TotalOpponentWins} / 平局 {summary.TotalDraws}";
+            BalanceTestResultDialog.Show(this, summary, _isDarkTheme);
         }
         finally
         {
             _isBalanceTesting = false;
             BalanceTestButton.IsEnabled = true;
+            BalanceTestButton.Content = "开始全角色平衡性测试";
         }
     }
 
     /// <summary>
-    /// 显示平衡性测试结果弹窗。
-    /// 弹窗由代码动态构建，方便复用当前亮/暗色主题，并展示总胜场、胜率、结果条和分半场明细。
+    /// 读取并校验平衡性测试场数。该数值表示每个对手的总场数，会在模拟时拆分为换边前后两段。
     /// </summary>
-    private void ShowBalanceTestResultDialog(
-        string leftName,
-        string rightName,
-        int totalMatches,
-        int firstHalfLeftWins,
-        int firstHalfRightWins,
-        int firstHalfDraws,
-        int secondHalfLeftWins,
-        int secondHalfRightWins,
-        int secondHalfDraws,
-        int leftTotalWins,
-        int rightTotalWins,
-        int totalDraws)
+    private bool TryGetBalanceMatchCount(out int matchesPerOpponent)
     {
-        var isDark = _isDarkTheme;
-        var dialog = new Window
-        {
-            Owner = this,
-            Title = "平衡性测试",
-            Width = 520,
-            SizeToContent = SizeToContent.Height,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            ResizeMode = ResizeMode.NoResize,
-            WindowStyle = WindowStyle.None,
-            AllowsTransparency = true,
-            Background = Brushes.Transparent,
-            FontFamily = new FontFamily("Microsoft YaHei UI"),
-            ShowInTaskbar = false
-        };
+        return int.TryParse(BalanceMatchCountTextBox.Text, out matchesPerOpponent)
+            && matchesPerOpponent is >= 2 and <= 20000;
+    }
 
-        var background = CreateBrush(isDark ? "#2D2F31" : "#FFFFFF");
-        var foreground = CreateBrush(isDark ? "#E8EAED" : "#202124");
-        var muted = CreateBrush(isDark ? "#BDC1C6" : "#5F6368");
-        var cardBackground = CreateBrush(isDark ? "#303134" : "#F8F9FA");
-        var borderBrush = CreateBrush(isDark ? "#3C4043" : "#E0E3E7");
-        var closeBackground = CreateBrush(isDark ? "#3C4043" : "#F1F3F4");
-        var closeForeground = CreateBrush(isDark ? "#F1F3F4" : "#202124");
+    /// <summary>
+    /// 执行“指定角色 vs 所有其它角色”的平衡性测试。
+    /// </summary>
+    private static BalanceTestSummary SimulateBalanceAgainstAll(string subjectKey, int matchesPerOpponent)
+    {
+        var subject = FighterCatalog.Get(subjectKey);
+        var opponents = FighterCatalog.All
+            .Where(x => !x.Key.Equals(subjectKey, StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
-        var rootBorder = new Border
+        var results = opponents
+            .Select(opponent => SimulateBalancePair(subject, opponent, matchesPerOpponent))
+            .ToList();
+
+        return new BalanceTestSummary(subject.Key, subject.Name, matchesPerOpponent, results);
+    }
+
+    /// <summary>
+    /// 执行单个对手的换边测试。
+    /// 前半段被测试角色在左侧，后半段被测试角色在右侧，以抵消出生位置影响。
+    /// </summary>
+    private static BalanceOpponentResult SimulateBalancePair(FighterDefinition subject, FighterDefinition opponent, int totalMatches)
+    {
+        var firstHalfMatches = totalMatches / 2;
+        var secondHalfMatches = totalMatches - firstHalfMatches;
+
+        var subjectLeftWins = 0;
+        var opponentRightWins = 0;
+        var firstHalfDraws = 0;
+        var subjectRightWins = 0;
+        var opponentLeftWins = 0;
+        var secondHalfDraws = 0;
+
+        for (var match = 0; match < firstHalfMatches; match++)
         {
-            Padding = new Thickness(22),
-            Background = background,
-            BorderBrush = borderBrush,
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(24)
-        };
-        rootBorder.Effect = new System.Windows.Media.Effects.DropShadowEffect
-        {
-            BlurRadius = 30,
-            ShadowDepth = 0,
-            Opacity = isDark ? 0.45 : 0.18,
-            Color = Colors.Black
-        };
-        rootBorder.MouseLeftButtonDown += (_, args) =>
-        {
-            if (args.OriginalSource is DependencyObject source && HasVisualAncestor<Button>(source))
+            var winnerSide = SimulateSingleBalanceMatch(subject.Key, opponent.Key);
+            if (winnerSide is null)
             {
-                return;
+                firstHalfDraws++;
             }
+            else if (winnerSide.Equals("left", StringComparison.OrdinalIgnoreCase))
+            {
+                subjectLeftWins++;
+            }
+            else
+            {
+                opponentRightWins++;
+            }
+        }
 
-            dialog.DragMove();
-        };
-
-        var root = new StackPanel();
-        rootBorder.Child = root;
-
-        var header = new DockPanel { Margin = new Thickness(0, 0, 0, 18) };
-        var closeButton = new Button
+        for (var match = 0; match < secondHalfMatches; match++)
         {
-            Width = 34,
-            Height = 34,
-            Content = "×",
-            FontSize = 18,
-            FontWeight = FontWeights.Bold,
-            Background = closeBackground,
-            Foreground = closeForeground,
-            BorderBrush = closeBackground,
-            Padding = new Thickness(0)
-        };
-        closeButton.Click += (_, _) => dialog.Close();
-        DockPanel.SetDock(closeButton, Dock.Right);
-        header.Children.Add(closeButton);
+            var winnerSide = SimulateSingleBalanceMatch(opponent.Key, subject.Key);
+            if (winnerSide is null)
+            {
+                secondHalfDraws++;
+            }
+            else if (winnerSide.Equals("right", StringComparison.OrdinalIgnoreCase))
+            {
+                subjectRightWins++;
+            }
+            else
+            {
+                opponentLeftWins++;
+            }
+        }
 
-        var titleStack = new StackPanel();
-        titleStack.Children.Add(new TextBlock
-        {
-            Text = "平衡性测试结果",
-            FontSize = 24,
-            FontWeight = FontWeights.Bold,
-            Foreground = foreground
-        });
-        titleStack.Children.Add(new TextBlock
-        {
-            Margin = new Thickness(0, 4, 0, 0),
-            Text = $"64x 快速模拟 · 共 {totalMatches} 场 · 自动左右互换",
-            FontSize = 13,
-            Foreground = muted
-        });
-        header.Children.Add(titleStack);
-        root.Children.Add(header);
-
-        var winRateBase = Math.Max(1, totalMatches - totalDraws);
-        var leftRate = leftTotalWins * 100.0 / winRateBase;
-        var rightRate = rightTotalWins * 100.0 / winRateBase;
-        root.Children.Add(CreateBalanceSummaryCard(leftName, rightName, leftTotalWins, rightTotalWins, totalDraws, leftRate, rightRate, cardBackground, borderBrush, foreground, muted));
-        root.Children.Add(CreateResultBar(leftTotalWins, rightTotalWins, totalDraws));
-        root.Children.Add(CreateStageCard("上半场", $"左方 {leftName}", firstHalfLeftWins, $"右方 {rightName}", firstHalfRightWins, firstHalfDraws, cardBackground, borderBrush, foreground, muted));
-        root.Children.Add(CreateStageCard("下半场", leftName, secondHalfLeftWins, rightName, secondHalfRightWins, secondHalfDraws, cardBackground, borderBrush, foreground, muted));
-
-        dialog.Content = rootBorder;
-        dialog.ShowDialog();
+        return new BalanceOpponentResult(
+            opponent.Key,
+            opponent.Name,
+            subjectLeftWins + subjectRightWins,
+            opponentRightWins + opponentLeftWins,
+            firstHalfDraws + secondHalfDraws,
+            subjectLeftWins,
+            opponentRightWins,
+            firstHalfDraws,
+            subjectRightWins,
+            opponentLeftWins,
+            secondHalfDraws);
     }
 
     /// <summary>
-    /// 创建结果弹窗顶部的汇总卡片，突出展示双方总胜场和去除平局后的胜率。
+    /// 快速模拟单局 1v1，返回获胜阵营；返回 null 表示超时或双败平局。
     /// </summary>
-    private static Border CreateBalanceSummaryCard(
-        string leftName,
-        string rightName,
-        int leftWins,
-        int rightWins,
-        int draws,
-        double leftRate,
-        double rightRate,
-        Brush background,
-        Brush borderBrush,
-        Brush foreground,
-        Brush muted)
+    private static string? SimulateSingleBalanceMatch(string leftKey, string rightKey)
     {
-        var card = CreateCard(background, borderBrush, new Thickness(0, 0, 0, 12));
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        //grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        card.Child = grid;
+        const double simulationSpeed = 64.0;
+        const double baseDt = 1.0 / 60.0;
+        const double maxSimulatedSecondsPerMatch = 120;
 
-        grid.Children.Add(CreateMetricBlock(leftName, leftWins.ToString(), $"胜率 {leftRate:0.0}%", CreateBrush(LeftSideColor), foreground, muted, 0));
-        grid.Children.Add(CreateMetricBlock(rightName, rightWins.ToString(), $"胜率 {rightRate:0.0}%", CreateBrush(RightSideColor), foreground, muted, 1));
-        //grid.Children.Add(CreateMetricBlock("平局", draws.ToString(), "未计入胜率", CreateBrush("#F6C453"), foreground, muted, 2));
+        var simWorld = new BattleWorld();
+        simWorld.StartMatch(leftKey, rightKey);
 
-        return card;
-    }
-
-    /// <summary>
-    /// 创建汇总卡片中的单个指标块，例如角色名、胜场数字和胜率说明。
-    /// </summary>
-    private static UIElement CreateMetricBlock(string title, string value, string subtitle, Brush accent, Brush foreground, Brush muted, int column)
-    {
-        var stack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
-        Grid.SetColumn(stack, column);
-        stack.Children.Add(new TextBlock
+        var elapsed = 0.0;
+        while (simWorld.Winner is null && !simWorld.IsDraw && elapsed < maxSimulatedSecondsPerMatch)
         {
-            Text = title,
-            Foreground = muted,
-            FontSize = 12,
-            TextAlignment = TextAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            MaxWidth = 140
-        });
-        stack.Children.Add(new TextBlock
-        {
-            Margin = new Thickness(0, 4, 0, 0),
-            Text = value,
-            Foreground = accent,
-            FontSize = 30,
-            FontWeight = FontWeights.Black,
-            TextAlignment = TextAlignment.Center
-        });
-        stack.Children.Add(new TextBlock
-        {
-            Text = subtitle,
-            Foreground = foreground,
-            FontSize = 12,
-            FontWeight = FontWeights.SemiBold,
-            TextAlignment = TextAlignment.Center
-        });
-        return stack;
-    }
+            simWorld.Update(baseDt * simulationSpeed);
+            elapsed += baseDt * simulationSpeed;
+        }
 
-    /// <summary>
-    /// 创建横向占比条，用蓝/红/黄分别表示左方胜场、右方胜场和平局占比。
-    /// </summary>
-    private static Border CreateResultBar(int leftWins, int rightWins, int draws)
-    {
-        var total = Math.Max(1, leftWins + rightWins + draws);
-        var grid = new Grid { Height = 16, Margin = new Thickness(0, 0, 0, 12), ClipToBounds = true };
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.001, leftWins), GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.001, rightWins), GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.001, draws), GridUnitType.Star) });
-
-        var left = new Border { Background = CreateBrush(LeftSideColor), ToolTip = $"蓝方 {leftWins * 100.0 / total:0.0}%" };
-        var right = new Border { Background = CreateBrush(RightSideColor), ToolTip = $"红方 {rightWins * 100.0 / total:0.0}%" };
-        var draw = new Border { Background = CreateBrush("#F6C453"), ToolTip = $"平局 {draws * 100.0 / total:0.0}%" };
-        Grid.SetColumn(right, 1);
-        Grid.SetColumn(draw, 2);
-        grid.Children.Add(left);
-        grid.Children.Add(right);
-        grid.Children.Add(draw);
-
-        return new Border
-        {
-            CornerRadius = new CornerRadius(8),
-            ClipToBounds = true,
-            Child = grid
-        };
-    }
-
-    /// <summary>
-    /// 创建上半场或下半场结果卡片，用于展示换边前后的胜场明细。
-    /// </summary>
-    private static Border CreateStageCard(
-        string title,
-        string leftLabel,
-        int leftWins,
-        string rightLabel,
-        int rightWins,
-        int draws,
-        Brush background,
-        Brush borderBrush,
-        Brush foreground,
-        Brush muted)
-    {
-        var card = CreateCard(background, borderBrush, new Thickness(0, 0, 0, 10));
-        var stack = new StackPanel();
-        card.Child = stack;
-        stack.Children.Add(new TextBlock
-        {
-            Text = title,
-            FontSize = 14,
-            FontWeight = FontWeights.Bold,
-            Foreground = foreground,
-            Margin = new Thickness(0, 0, 0, 8)
-        });
-        stack.Children.Add(CreateStatRow(leftLabel, leftWins, CreateBrush(LeftSideColor), muted));
-        stack.Children.Add(CreateStatRow(rightLabel, rightWins, CreateBrush(RightSideColor), muted));
-        stack.Children.Add(CreateStatRow("平局", draws, CreateBrush("#F6C453"), muted));
-        return card;
-    }
-
-    /// <summary>
-    /// 创建结果卡片内的一行统计信息，左侧为说明文字，右侧为数值。
-    /// </summary>
-    private static UIElement CreateStatRow(string label, int value, Brush accent, Brush muted)
-    {
-        var row = new DockPanel { LastChildFill = true, Margin = new Thickness(0, 3, 0, 0) };
-        var valueText = new TextBlock
-        {
-            Text = value.ToString(),
-            Foreground = accent,
-            FontWeight = FontWeights.Bold,
-            MinWidth = 52,
-            TextAlignment = TextAlignment.Right
-        };
-        DockPanel.SetDock(valueText, Dock.Right);
-        row.Children.Add(valueText);
-        row.Children.Add(new TextBlock
-        {
-            Text = label,
-            Foreground = muted,
-            TextTrimming = TextTrimming.CharacterEllipsis
-        });
-        return row;
-    }
-
-    /// <summary>
-    /// 创建通用圆角卡片容器，统一弹窗内各区块的边距、背景、边框和圆角。
-    /// </summary>
-    private static Border CreateCard(Brush background, Brush borderBrush, Thickness margin)
-    {
-        return new Border
-        {
-            Margin = margin,
-            Padding = new Thickness(14),
-            Background = background,
-            BorderBrush = borderBrush,
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(16)
-        };
+        return simWorld.Winner?.Side;
     }
 
     /// <summary>
@@ -614,6 +356,9 @@ public partial class MainWindow : Window
         SpeedCombo.Background = controlBackgroundBrush;
         SpeedCombo.Foreground = primaryTextBrush;
         SpeedCombo.BorderBrush = controlBorderBrush;
+        BalanceMatchCountTextBox.Background = controlBackgroundBrush;
+        BalanceMatchCountTextBox.Foreground = primaryTextBrush;
+        BalanceMatchCountTextBox.BorderBrush = controlBorderBrush;
 
         foreach (var textBlock in FindVisualChildren<TextBlock>(this))
         {
@@ -625,7 +370,8 @@ public partial class MainWindow : Window
                 || ReferenceEquals(textBlock, RightdescTextBlock)
                 || ReferenceEquals(textBlock, StatusTextBlock)
                 || HasVisualAncestor<Button>(textBlock)
-                || HasVisualAncestor<ComboBox>(textBlock))
+                || HasVisualAncestor<ComboBox>(textBlock)
+                || HasVisualAncestor<TextBox>(textBlock))
             {
                 continue;
             }
@@ -848,7 +594,7 @@ public partial class MainWindow : Window
     {
         var totalHp = team.Sum(x => x.Definition.HP);
         var currentHp = team.Sum(x => Math.Max(0, x.Health));
-        nameTextBlock.Text = string.Join(" + ", team.Select(x => x.Definition.Name));
+        nameTextBlock.Text = string.Join(" / ", team.Select(x => x.Definition.Name));
         nameTextBlock.Foreground = CreateBrush(sideColor);
         descTextBlock.Text = string.Join("\n", team.Select(x => $"{x.Definition.Name}: {GetSkill(x).GetDescription(x)}"));
         descTextBlock.Foreground = CreateBrush(descColor);

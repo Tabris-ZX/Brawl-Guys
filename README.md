@@ -1,6 +1,6 @@
 # Brawl Guys
 
-一个使用 **.NET 8 + WPF** 编写的赛博逗蛐蛐游戏。(创意来源 @SpennTF2)
+一个使用 **.NET 8 + WPF** 编写的赛博逗蛐蛐游戏。(创意来源 [@SpennTF2](https://www.youtube.com/@Spenntf2/shorts))
 
 WPF层负责显示竞技场、角色血量和测试入口 (后期准备换unity)
 
@@ -18,7 +18,7 @@ dotnet run --project .\BrawlGuys.Wpf\BrawlGuys.Wpf.csproj
 也可以直接用 Visual Studio / Rider 打开 `BrawlGuys.sln` 运行 `BrawlGuys.Wpf`。
 
 ### 发行版
-暂无
+暂未发布
 
 ## 项目目录
 
@@ -150,3 +150,5 @@ dotnet build .\BrawlGuys.sln
 ```
 
 **注:** 如果 `roles.json` 中有角色缺少对应技能文件、技能 `Key` 找不到角色配置、`Accuracy` 超范围或投掷物配置不完整，启动/构建运行时会报出明确错误。
+
+## 持续更新中...

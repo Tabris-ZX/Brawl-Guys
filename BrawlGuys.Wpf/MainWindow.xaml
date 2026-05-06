@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="FightingGuys"
-        Width="1000"
+        Width="1025"
         Height="800"
-        MinWidth="1000"
+        MinWidth="1025"
         MinHeight="800"
         FontFamily="Microsoft YaHei UI"
         Icon="Resources/Images/Icons/app.ico">
@@ -65,7 +65,7 @@
                     <TextBlock Margin="0,4,0,0"
                                FontSize="13"
                                Foreground="{StaticResource TextMutedBrush}"
-                               Text="v0.3.2-beta" />
+                               Text="v0.3.3-beta" />
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right"
@@ -130,7 +130,7 @@
         <Grid Grid.Row="1" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="360" />
             </Grid.ColumnDefinitions>
 
             <Border x:Name="ArenaOuterBorder" Grid.Column="0"
@@ -304,17 +304,30 @@
                                    FontWeight="Bold"
                                    Foreground="{StaticResource TextSectionBrush}"
                                    Text="平衡性测试" />
-                        <TextBlock Margin="0,4,0,10"
+                        <TextBlock Margin="0,4,0,8"
                                    FontSize="12"
                                    Foreground="{StaticResource TextMutedBrush}"
-                                   Text="使用 64x 快速模拟，自动进行左右互换对战。" />
+                                   Text="选择角色后，将与所有其他角色进行 64x 快速战斗模拟" />
+                        <DockPanel Margin="0,0,0,10" LastChildFill="True">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Width="86"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Text="每个对手" />
+                            <TextBox x:Name="BalanceMatchCountTextBox"
+                                     Height="32"
+                                     Padding="8,5"
+                                     Text="1000"
+                                     ToolTip="每个对手的总对战场数，会自动拆分为原始站位和左右互换两部分" />
+                        </DockPanel>
                         <Button x:Name="BalanceTestButton"
                                 Height="38"
                                 Click="BalanceTestButton_OnClick"
                                 Background="#FFFFFF"
                                 Foreground="#202124"
                                 BorderBrush="#DADCE0"
-                                Content="开始 64x 平衡性测试" />
+                                Content="开始全角色平衡性测试" />
                     </StackPanel>
                 </Border>
             </StackPanel>
