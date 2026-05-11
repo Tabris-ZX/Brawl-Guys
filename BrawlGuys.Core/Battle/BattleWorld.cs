@@ -398,6 +398,34 @@ public sealed class BattleWorld
     }
 
     /// <summary>
+    /// 让角色立即朝指定方向切换为固定速度。
+    /// 适合冲刺、扑咬、位移突进等技能。
+    /// </summary>
+    public void SetFighterVelocity(FighterState fighter, Vec2 direction, double speed)
+    {
+        var normalizedDirection = direction.Length <= 0.0001 ? new Vec2(1, 0) : direction.Normalized();
+        fighter.Velocity = normalizedDirection * Math.Max(0, speed);
+    }
+
+    /// <summary>
+    /// 对角色直接结算一次伤害，并触发命中方/受击方技能钩子。
+    /// 适合近战碰撞、环境伤害等非投掷物来源。
+    /// </summary>
+    public double DealDirectDamage(FighterState attacker, FighterState target, double baseDamage)
+    {
+        if (!attacker.IsAlive || !target.IsAlive)
+        {
+            return 0;
+        }
+
+        var damage = ApplyDamageToFighter(target, baseDamage, attacker);
+        SpawnDamageText(target.Position, damage, target.Side);
+        GetSkill(attacker).OnHitTarget(this, attacker, target, damage);
+        GetSkill(target).OnDamaged(this, attacker, target, damage);
+        return damage;
+    }
+
+    /// <summary>
     /// 以角色为中心向多个方向发射投掷物。
     /// </summary>
     public void FireRadialProjectiles(FighterState owner, FighterState target, ThrowableDefinition throwable, double damage, int directionCount = 8)
@@ -537,6 +565,9 @@ public sealed class BattleWorld
             return;
         }
 
+        var skill = GetSkill(self);
+        skill.OnUpdate(this, self, enemy, dt);
+
         var wasSleeping = self.IsSleeping;
         self.SleepTime = Math.Max(0, self.SleepTime - dt);
 
@@ -546,7 +577,6 @@ public sealed class BattleWorld
             BounceOnWalls(self);
             KeepMinimumSpeed(self);
 
-            var skill = GetSkill(self);
             if (skill.CanUseSkill(this, self, enemy))
             {
                 self.SkillTimer -= dt;
@@ -673,6 +703,7 @@ public sealed class BattleWorld
         if (bounced)
         {
             SpawnImpact(position, GetPrimaryColor(fighter.Side));
+            GetSkill(fighter).OnWallBounce(this, fighter);
         }
     }
 
@@ -693,6 +724,9 @@ public sealed class BattleWorld
         {
             return;
         }
+
+        GetSkill(a).OnFighterCollision(this, a, b);
+        GetSkill(b).OnFighterCollision(this, b, a);
 
         var normal = delta / distance;
         var overlap = minimumDistance - distance;

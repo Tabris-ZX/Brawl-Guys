@@ -30,6 +30,14 @@ public interface IFighterSkill
     void Execute(BattleWorld world, FighterState caster, FighterState target);
 
     /// <summary>
+    /// 每帧更新时调用。
+    /// 适合处理持续状态、专属计时器、冲刺状态等被动逻辑。
+    /// </summary>
+    void OnUpdate(BattleWorld world, FighterState self, FighterState enemy, double dt)
+    {
+    }
+
+    /// <summary>
     /// 每局开始时调用一次，用于初始化角色运行时状态。
     /// 例如库存数量、怒气状态、下一次技能预告等都推荐写入 FighterState.RuntimeValues。
     /// </summary>
@@ -76,6 +84,22 @@ public interface IFighterSkill
     /// 适合反伤、受击触发、受伤叠层等逻辑；attacker 可能为空，例如环境或无明确来源的伤害。
     /// </summary>
     void OnDamaged(BattleWorld world, FighterState? attacker, FighterState target, double damageDealt)
+    {
+    }
+
+    /// <summary>
+    /// 两名角色身体发生碰撞时调用。
+    /// 每次碰撞会分别以 self 视角回调双方技能。
+    /// </summary>
+    void OnFighterCollision(BattleWorld world, FighterState self, FighterState other)
+    {
+    }
+
+    /// <summary>
+    /// 角色碰到场地边界并发生反弹后调用。
+    /// 适合处理撞墙惩罚、额外特效等逻辑。
+    /// </summary>
+    void OnWallBounce(BattleWorld world, FighterState self)
     {
     }
 

@@ -65,7 +65,7 @@
                     <TextBlock Margin="0,4,0,0"
                                FontSize="13"
                                Foreground="{StaticResource TextMutedBrush}"
-                               Text="v0.3.3-beta" />
+                               Text="v0.4.2-beta" />
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right"

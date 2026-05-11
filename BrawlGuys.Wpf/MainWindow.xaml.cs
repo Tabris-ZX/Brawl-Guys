@@ -1,10 +1,9 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Windows.Threading;
 using BrawlGuys.Core;
 using BrawlGuys.Core.Skills;
 using BrawlGuys.Core.Skills.Roles;
@@ -29,8 +28,8 @@ public partial class MainWindow : Window
     private readonly Image _arenaImage = new();
     private Brush _arenaBackgroundBrush = CreateArenaBackgroundBrush(ArenaBackgroundLightColor);
 
-    private readonly DispatcherTimer _timer;
-    private DateTime _lastFrameTime;
+    private readonly Stopwatch _frameStopwatch = new();
+    private double _lastFrameTimestamp;
     private bool _isLoaded;
     private bool _isPaused;
     private double _sidePanelSyncAccumulator;
@@ -63,23 +62,22 @@ public partial class MainWindow : Window
         SetupFighterCombo(LeftFighterCombo2, "watcher");
         SetupFighterCombo(RightFighterCombo2, "qzd");
         SpeedCombo.SelectedIndex = 1;
-        ScaleCombo.SelectedIndex = 4;
-
-        _timer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(16)
-        };
-        _timer.Tick += GameLoopTick;
+        ScaleCombo.SelectedIndex = 1;
 
         Loaded += (_, _) =>
         {
             _isLoaded = true;
             RestartMatch();
-            _lastFrameTime = DateTime.Now;
-            _timer.Start();
+            _frameStopwatch.Start();
+            _lastFrameTimestamp = _frameStopwatch.Elapsed.TotalSeconds;
+            CompositionTarget.Rendering += GameLoopTick;
         };
 
-        Closed += (_, _) => _timer.Stop();
+        Closed += (_, _) =>
+        {
+            CompositionTarget.Rendering -= GameLoopTick;
+            _frameStopwatch.Stop();
+        };
     }
 
     /// <summary>
@@ -89,7 +87,7 @@ public partial class MainWindow : Window
     {
         _isPaused = false;
         PauseButton.Content = "暂停";
-        _lastFrameTime = DateTime.Now;
+        _lastFrameTimestamp = _frameStopwatch.Elapsed.TotalSeconds;
         RestartMatch();
     }
 
@@ -100,7 +98,7 @@ public partial class MainWindow : Window
     {
         _isPaused = !_isPaused;
         PauseButton.Content = _isPaused ? "继续" : "暂停";
-        _lastFrameTime = DateTime.Now;
+        _lastFrameTimestamp = _frameStopwatch.Elapsed.TotalSeconds;
         SyncSidePanel();
     }
 
@@ -582,10 +580,16 @@ public partial class MainWindow : Window
     /// </summary>
     private void GameLoopTick(object? sender, EventArgs e)
     {
-        var now = DateTime.Now;
-        var dt = (now - _lastFrameTime).TotalSeconds;
-        _lastFrameTime = now;
+        var now = _frameStopwatch.Elapsed.TotalSeconds;
+        var dt = now - _lastFrameTimestamp;
+        _lastFrameTimestamp = now;
 
+        if (dt <= 0)
+        {
+            return;
+        }
+
+        dt = Math.Min(dt, 0.05);
         var scaledDt = dt * _SpeedMultiplier;
 
         if (!_isPaused)
@@ -786,10 +790,7 @@ public partial class MainWindow : Window
         var primaryColor = GetPrimaryColor(fighter.Side);
         var secondaryColor = GetSecondaryColor(fighter.Side);
 
-        var enemy = _world.Fighters
-            .Where(x => x.IsAlive && !x.Side.Equals(fighter.Side, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(x => (x.Position - fighter.Position).Length)
-            .FirstOrDefault();
+        var enemy = FindNearestEnemyForRender(fighter);
         var shouldMirror = fighter.Definition.IsMirror == 1 && enemy is not null;
         var isFlipped = shouldMirror && (enemy!.Position.X - fighter.Position.X) < 0;
 
@@ -831,6 +832,33 @@ public partial class MainWindow : Window
 
         DrawArenaHintText(dc, fighter);
         DrawHealthBarAboveFighter(dc, fighter);
+    }
+
+    /// <summary>
+    /// 为渲染阶段寻找最近敌人，避免每帧使用 LINQ 产生额外分配。
+    /// </summary>
+    private FighterState? FindNearestEnemyForRender(FighterState fighter)
+    {
+        FighterState? nearestEnemy = null;
+        var nearestDistanceSquared = double.MaxValue;
+
+        foreach (var candidate in _world.Fighters)
+        {
+            if (!candidate.IsAlive || candidate.Side.Equals(fighter.Side, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var delta = candidate.Position - fighter.Position;
+            var distanceSquared = (delta.X * delta.X) + (delta.Y * delta.Y);
+            if (distanceSquared < nearestDistanceSquared)
+            {
+                nearestDistanceSquared = distanceSquared;
+                nearestEnemy = candidate;
+            }
+        }
+
+        return nearestEnemy;
     }
 
     /// <summary>

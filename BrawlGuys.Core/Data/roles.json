@@ -90,7 +90,7 @@
     "texturePath": "roles/ikun.png",
     "radius": 50,
     "HP": 925,
-    "Speed": 180,
+    "Speed": 170,
     "CD": 3.0,
     "Accuracy": 90,
     "IsMirror": 1
@@ -105,6 +105,18 @@
     "Speed": 175,
     "CD": 2.4,
     "Accuracy": 84,
+    "IsMirror": 1
+  },
+  {
+    "key": "blue-dolphin",
+    "name": "蓝色海豚",
+    "desc": "神秘",
+    "texturePath": "roles/lcy.png",
+    "radius": 50,
+    "HP": 1050,
+    "Speed": 180,
+    "CD": 4.0,
+    "Accuracy": 100,
     "IsMirror": 1
   }
 ]
