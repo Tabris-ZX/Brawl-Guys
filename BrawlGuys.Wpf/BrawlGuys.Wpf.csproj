@@ -11,6 +11,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <PackageId>BrawlGuys.Wpf</PackageId>
+
+    <AssemblyName>BrawlGuys</AssemblyName>
+    <DebugType>none</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

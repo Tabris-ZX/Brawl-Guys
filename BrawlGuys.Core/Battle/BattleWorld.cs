@@ -15,16 +15,24 @@ public sealed class BattleWorld
     private const double MaxFighterProjectileSpreadAngleDegrees = 50;
 
     private readonly Random _random = new();
+    private double _arenaWidth = BattleTuning.ArenaSize;
+    private double _arenaHeight = BattleTuning.ArenaSize;
+    private double _entityScale = 1.0;
 
     /// <summary>
     /// 当前竞技场宽度。
     /// </summary>
-    public double ArenaWidth => BattleTuning.ArenaSize;
+    public double ArenaWidth => _arenaWidth;
 
     /// <summary>
     /// 当前竞技场高度。
     /// </summary>
-    public double ArenaHeight => BattleTuning.ArenaSize;
+    public double ArenaHeight => _arenaHeight;
+
+    /// <summary>
+    /// 当前实体缩放系数。2v2 时为 0.75，1v1 时为 1.0。
+    /// </summary>
+    public double EntityScale => _entityScale;
 
     /// <summary>
     /// 当前局内角色列表。当前版本固定为左右两名角色。
@@ -91,6 +99,11 @@ public sealed class BattleWorld
 
         var safeLeftKeys = leftKeys.Count == 0 ? new[] { "drunkard" } : leftKeys;
         var safeRightKeys = rightKeys.Count == 0 ? new[] { "angry-man" } : rightKeys;
+
+        var isTeamBattle = safeLeftKeys.Count >= 2 && safeRightKeys.Count >= 2;
+        _arenaWidth = BattleTuning.ArenaSize;
+        _arenaHeight = BattleTuning.ArenaSize;
+        _entityScale = isTeamBattle ? 0.75 : 1.0;
 
         AddTeamFighters(safeLeftKeys, "left");
         AddTeamFighters(safeRightKeys, "right");
@@ -253,7 +266,7 @@ public sealed class BattleWorld
         double fragmentRadiusScale = 1)
     {
         var normalizedDirection = direction.Length <= 0.0001 ? new Vec2(1, 0) : direction.Normalized();
-        var spawnPosition = owner.Position + (normalizedDirection * (owner.Definition.Radius + throwable.Radius + 4));
+        var spawnPosition = owner.Position + (normalizedDirection * ((owner.Definition.Radius * _entityScale) + (throwable.Radius * _entityScale) + 4));
         Projectiles.Add(CreateProjectile(
             owner.Id,
             owner.Side,
@@ -290,7 +303,7 @@ public sealed class BattleWorld
         bool keepOnFighterHit = false)
     {
         var direction = (target.Position - owner.Position).Normalized();
-        var spawnPosition = owner.Position + (direction * (owner.Radius + throwable.Radius + 4));
+        var spawnPosition = owner.Position + (direction * ((owner.Radius * _entityScale) + (throwable.Radius * _entityScale) + 4));
         Projectiles.Add(CreateProjectile(
             owner.Id,
             owner.Side,
@@ -356,7 +369,7 @@ public sealed class BattleWorld
         double? attackIntervalOverride = null)
     {
         var summonableDefinition = ThrowableCatalog.Get(summonableKey);
-        var radius = radiusOverride ?? summonableDefinition.UnitRadius ?? DefaultDroneRadius;
+        var radius = (radiusOverride ?? summonableDefinition.UnitRadius ?? DefaultDroneRadius) * _entityScale;
         var hp = hpOverride ?? summonableDefinition.unitHP ?? DefaultDroneHP;
         var attackInterval = attackIntervalOverride ?? summonableDefinition.unitCD ?? DefaultDroneAttackInterval;
         var summonPosition = ClampSummonPosition(owner.Position, radius);
@@ -456,7 +469,7 @@ public sealed class BattleWorld
             TexturePath = throwable.TexturePath,
             Position = position,
             Velocity = velocity,
-            Radius = throwable.Radius,
+            Radius = throwable.Radius * _entityScale,
             Damage = damageOverride ?? throwable.Damage,
             CanSleepTarget = throwable.CanSleepTarget,
             SleepDuration = throwable.SleepDuration,
@@ -623,7 +636,7 @@ public sealed class BattleWorld
     /// </summary>
     private void BounceOnWalls(FighterState fighter)
     {
-        var radius = fighter.Definition.Radius;
+        var radius = fighter.Definition.Radius * _entityScale;
         var position = fighter.Position;
         var velocity = fighter.Velocity;
         var bounced = false;
@@ -666,7 +679,7 @@ public sealed class BattleWorld
     /// <summary>
     /// 两个角色身体接触时只反弹，不造成伤害。
     /// </summary>
-    private static void ResolveFighterCollision(FighterState a, FighterState b)
+    private void ResolveFighterCollision(FighterState a, FighterState b)
     {
         if (!a.IsAlive || !b.IsAlive)
         {
@@ -675,7 +688,7 @@ public sealed class BattleWorld
 
         var delta = b.Position - a.Position;
         var distance = Math.Max(0.0001, delta.Length);
-        var minimumDistance = a.Definition.Radius + b.Definition.Radius;
+        var minimumDistance = (a.Definition.Radius * _entityScale) + (b.Definition.Radius * _entityScale);
         if (distance >= minimumDistance)
         {
             return;
@@ -806,10 +819,6 @@ public sealed class BattleWorld
             .FirstOrDefault();
     }
 
-    /// <summary>
-    /// 更新所有投掷物位置并判定命中。
-    /// 命中后直接结算伤害，不再依赖角色身体碰撞造成伤害。
-    /// </summary>
     private void UpdateProjectiles(double dt)
     {
         for (var i = Projectiles.Count - 1; i >= 0; i--)
@@ -1137,9 +1146,9 @@ public sealed class BattleWorld
         return side.Equals("left", StringComparison.OrdinalIgnoreCase) ? "#8FC8FF" : "#FFB3BC";
     }
 
-    private static bool IsProjectileHit(BattleProjectile projectile, FighterState target)
+    private bool IsProjectileHit(BattleProjectile projectile, FighterState target)
     {
-        return IsProjectileHit(projectile, target.Position, target.Definition.Radius);
+        return IsProjectileHit(projectile, target.Position, target.Definition.Radius * _entityScale);
     }
 
     private double ApplyDamageToFighter(FighterState target, double baseDamage, FighterState? attacker = null)
@@ -1207,7 +1216,7 @@ public sealed class BattleWorld
 
     private void BounceProjectileOnFighter(BattleProjectile projectile, FighterState target)
     {
-        BounceProjectileOnUnit(projectile, target.Position, target.Definition.Radius);
+        BounceProjectileOnUnit(projectile, target.Position, target.Definition.Radius * _entityScale);
     }
 
     private void BounceProjectileOnUnit(BattleProjectile projectile, Vec2 targetPosition, double targetRadius)

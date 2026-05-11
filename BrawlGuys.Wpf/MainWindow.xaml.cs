@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     private const string LeftSideTextColor = "#8FC8FF";
     private const string RightSideColor = "#FF6B7A";
     private const string RightSideTextColor = "#FFB3BC";
+    private const double ArenaContentScale = 1.0;
 
     private static readonly Dictionary<string, SolidColorBrush> SolidBrushCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, Brush> ImageBrushCache = new(StringComparer.OrdinalIgnoreCase);
@@ -34,6 +35,7 @@ public partial class MainWindow : Window
     private bool _isPaused;
     private double _sidePanelSyncAccumulator;
     private double _SpeedMultiplier = 1.0;
+    private double _arenaContentScale = ArenaContentScale;
     private bool _isBalanceTesting;
     private bool _isDarkTheme;
     private bool _isTwoVsTwoMode;
@@ -47,8 +49,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         ApplyTheme(false);
 
-        ArenaCanvas.Width = _world.ArenaWidth;
-        ArenaCanvas.Height = _world.ArenaHeight;
+        UpdateArenaViewport();
         RenderOptions.SetBitmapScalingMode(ArenaCanvas, BitmapScalingMode.LowQuality);
         RenderOptions.SetEdgeMode(ArenaCanvas, EdgeMode.Aliased);
 
@@ -62,6 +63,7 @@ public partial class MainWindow : Window
         SetupFighterCombo(LeftFighterCombo2, "watcher");
         SetupFighterCombo(RightFighterCombo2, "qzd");
         SpeedCombo.SelectedIndex = 1;
+        ScaleCombo.SelectedIndex = 4;
 
         _timer = new DispatcherTimer
         {
@@ -117,6 +119,7 @@ public partial class MainWindow : Window
     {
         _isTwoVsTwoMode = !_isTwoVsTwoMode;
         UpdateModeControls();
+        ApplyDefaultArenaScaleForMode();
         RestartMatch();
     }
 
@@ -356,6 +359,9 @@ public partial class MainWindow : Window
         SpeedCombo.Background = controlBackgroundBrush;
         SpeedCombo.Foreground = primaryTextBrush;
         SpeedCombo.BorderBrush = controlBorderBrush;
+        ScaleCombo.Background = controlBackgroundBrush;
+        ScaleCombo.Foreground = primaryTextBrush;
+        ScaleCombo.BorderBrush = controlBorderBrush;
         BalanceMatchCountTextBox.Background = controlBackgroundBrush;
         BalanceMatchCountTextBox.Foreground = primaryTextBrush;
         BalanceMatchCountTextBox.BorderBrush = controlBorderBrush;
@@ -462,6 +468,17 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// 根据当前战斗场地尺寸和缩放系数更新画布与渲染器。
+    /// </summary>
+    private void UpdateArenaViewport()
+    {
+        ArenaCanvas.Width = _world.ArenaWidth;
+        ArenaCanvas.Height = _world.ArenaHeight;
+        ArenaCanvas.LayoutTransform = new ScaleTransform(_arenaContentScale, _arenaContentScale);
+
+        InitializeArenaRenderer();
+    }
+    /// <summary>
     /// 根据当前 UI 选角重新创建一局比赛。
     /// 1v1 时每边一个角色；2v2 时读取两组下拉框，并把团队生命值和描述聚合显示到侧栏。
     /// </summary>
@@ -482,6 +499,7 @@ public partial class MainWindow : Window
             _world.StartMatch(leftKey, rightKey);
         }
 
+        UpdateArenaViewport();
         SyncSidePanel();
         RenderWorld();
     }
@@ -502,6 +520,38 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// 根据当前模式自动选择推荐的场地缩放比例。当前仅保留用户手动缩放，不再随 2v2 自动改变画布大小。
+    /// </summary>
+    private void ApplyDefaultArenaScaleForMode()
+    {
+        SetArenaScale(1.0);
+    }
+
+    /// <summary>
+    /// 设置场地缩放，并同步下拉框与渲染尺寸。
+    /// </summary>
+    private void SetArenaScale(double scale)
+    {
+        _arenaContentScale = scale;
+        foreach (ComboBoxItem item in ScaleCombo.Items)
+        {
+            if (double.TryParse(item.Tag?.ToString(), out var tagScale) && Math.Abs(tagScale - scale) < 0.0001)
+            {
+                if (!ReferenceEquals(ScaleCombo.SelectedItem, item))
+                {
+                    ScaleCombo.SelectedItem = item;
+                }
+                UpdateArenaViewport();
+                RenderWorld();
+                return;
+            }
+        }
+
+        UpdateArenaViewport();
+        RenderWorld();
+    }
+
+    /// <summary>
     /// 倍速下拉框事件：读取 ComboBoxItem.Tag 中的倍率，后续帧循环会用该倍率缩放 dt。
     /// </summary>
     private void SpeedCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -511,6 +561,19 @@ public partial class MainWindow : Window
             && Speed > 0)
         {
             _SpeedMultiplier = Speed;
+        }
+    }
+
+    /// <summary>
+    /// 场地缩放下拉框事件：读取 ComboBoxItem.Tag 中的缩放比例，并实时更新场地显示尺寸。
+    /// </summary>
+    private void ScaleCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ScaleCombo.SelectedItem is ComboBoxItem item
+            && double.TryParse(item.Tag?.ToString(), out var scale)
+            && scale > 0)
+        {
+            SetArenaScale(scale);
         }
     }
 
@@ -719,7 +782,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var radius = fighter.Definition.Radius;
+        var radius = fighter.Definition.Radius * _world.EntityScale;
         var primaryColor = GetPrimaryColor(fighter.Side);
         var secondaryColor = GetSecondaryColor(fighter.Side);
 
@@ -782,7 +845,7 @@ public partial class MainWindow : Window
 
         var auraColor = WatcherSkill.IsAngry(fighter) ? "#FF4D4D" : "#4DA6FF";
         var pulse = 0.5 + (0.5 * Math.Sin(_world.ElapsedTime * 5.5));
-        var orbitRadius = fighter.Definition.Radius + 3 + (pulse * 2.5);
+        var orbitRadius = (fighter.Definition.Radius * _world.EntityScale) + 3 + (pulse * 2.5);
         var time = _world.ElapsedTime;
 
         for (var i = 0; i < 12; i++)
@@ -802,7 +865,7 @@ public partial class MainWindow : Window
             dc.Pop();
         }
 
-        var softGlowRadius = fighter.Definition.Radius + 6;
+        var softGlowRadius = (fighter.Definition.Radius * _world.EntityScale) + 6;
         dc.DrawEllipse(
             CreateBrush(auraColor, WatcherSkill.IsAngry(fighter) ? 0.11 : 0.09),
             null,
@@ -820,7 +883,7 @@ public partial class MainWindow : Window
         var shadow = CreateFormattedText("Zzz...", 18, CreateBrush("#000000", 0.7), FontWeights.Bold);
         var text = CreateFormattedText("Zzz...", 18, CreateBrush(GetSecondaryColor(fighter.Side)), FontWeights.Bold);
         var x = fighter.Position.X - (text.Width / 2);
-        var y = fighter.Position.Y - fighter.Definition.Radius - 40 - zOffset;
+        var y = fighter.Position.Y - (fighter.Definition.Radius * _world.EntityScale) - 40 - zOffset;
 
         dc.DrawText(shadow, new Point(x + 1, y + 1));
         dc.DrawText(text, new Point(x, y));
@@ -834,7 +897,7 @@ public partial class MainWindow : Window
         const double width = 70;
         const double height = 6;
         var left = fighter.Position.X - (width / 2);
-        var top = fighter.Position.Y - fighter.Definition.Radius - 18;
+        var top = fighter.Position.Y - (fighter.Definition.Radius * _world.EntityScale) - 18;
         var hpRatio = Math.Max(0, fighter.Health / fighter.Definition.HP);
         var barColor = fighter.Side.Equals("left", StringComparison.OrdinalIgnoreCase)
             ? LeftSideColor
@@ -915,7 +978,7 @@ public partial class MainWindow : Window
         var shadow = CreateFormattedText(hintText, 14, CreateBrush("#000000", 0.65), FontWeights.Bold);
         var text = CreateFormattedText(hintText, 14, CreateBrush(GetSecondaryColor(fighter.Side)), FontWeights.Bold);
         var x = fighter.Position.X - (text.Width / 2);
-        var y = fighter.Position.Y - fighter.Definition.Radius - 40;
+        var y = fighter.Position.Y - (fighter.Definition.Radius * _world.EntityScale) - 40;
 
         dc.DrawText(shadow, new Point(x + 1, y + 1));
         dc.DrawText(text, new Point(x, y));

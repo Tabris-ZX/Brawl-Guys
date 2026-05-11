@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="FightingGuys"
-        Width="1025"
+        Width="1080"
         Height="800"
-        MinWidth="1025"
+        MinWidth="1080"
         MinHeight="800"
         FontFamily="Microsoft YaHei UI"
         Icon="Resources/Images/Icons/app.ico">
@@ -40,15 +40,15 @@
         <SolidColorBrush Color="#F8F9FA" />
     </Window.Background>
 
-    <Grid Margin="16">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <Border x:Name="TopBarCard" Grid.Row="0"
-                Margin="0,0,0,12"
-                Padding="16"
+                Margin="10,0,0,10"
+                Padding="12"
                 Background="#FFFFFF"
                 BorderBrush="#E0E3E7"
                 BorderThickness="1"
@@ -58,7 +58,7 @@
             </Border.Effect>
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left">
-                    <TextBlock FontSize="24"
+                    <TextBlock FontSize="28"
                                FontWeight="Bold"
                                Foreground="{StaticResource TextTitleBrush}"
                                Text="Brawl Guys" />
@@ -81,6 +81,19 @@
                             <ComboBoxItem Content="1.0x" Tag="1.0" />
                             <ComboBoxItem Content="2.0x" Tag="2.0" />
                             <ComboBoxItem Content="4.0x" Tag="4.0" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Margin="0,0,0,6" Foreground="{StaticResource TextMutedBrush}" Text="缩放" />
+                        <ComboBox x:Name="ScaleCombo"
+                                  Width="88"
+                                  Style="{StaticResource ModernComboBoxStyle}"
+                                  SelectionChanged="ScaleCombo_SelectionChanged">
+                            <ComboBoxItem Content="75%" Tag="0.75" />
+                            <ComboBoxItem Content="100%" Tag="1.00" />
+                            <ComboBoxItem Content="125%" Tag="1.25" />
+                            <ComboBoxItem Content="150%" Tag="1.50" />
                         </ComboBox>
                     </StackPanel>
                     
@@ -159,6 +172,8 @@
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
+
+
                 <Border x:Name="InfoPanelCard"
                         Margin="0,0,0,10"
                         Padding="12"
@@ -170,7 +185,7 @@
                         <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.08" Color="#DADCE0" />
                     </Border.Effect>
                     <StackPanel>
-                        <TextBlock FontSize="16"
+                        <TextBlock FontSize="18"
                                    FontWeight="Bold"
                                    Foreground="{StaticResource TextSectionBrush}"
                                    Text="对战信息" />

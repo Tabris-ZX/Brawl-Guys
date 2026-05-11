@@ -17,10 +17,10 @@
     "desc": "这个男人很生气",
     "texturePath": "roles/angry-man.png",
     "radius": 50,
-    "HP": 1000,
+    "HP": 970,
     "Speed": 160,
-    "CD": 2.0,
-    "Accuracy": 80,
+    "CD": 2.1,
+    "Accuracy": 70,
     "IsMirror": 1
   },
   {
@@ -55,7 +55,7 @@
     "radius": 50,
     "HP": 1000,
     "Speed": 145,
-    "CD": 9.0,
+    "CD": 8.5,
     "Accuracy": 50,
     "IsMirror": 1
   },

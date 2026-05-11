@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>BrawlGuys.Core</PackageId>
+
+    <DebugType>none</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

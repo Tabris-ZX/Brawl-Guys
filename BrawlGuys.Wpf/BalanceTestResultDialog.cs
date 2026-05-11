@@ -253,7 +253,7 @@ internal static class BalanceTestResultDialog
         stack.Children.Add(new TextBlock
         {
             Margin = new Thickness(0, 6, 0, 0),
-            Text = $"上半场：{subjectName} 左 {result.SubjectLeftWins} 胜 / {result.OpponentName} 右 {result.OpponentRightWins} 胜 / 平 {result.FirstHalfDraws}\n下半场：{subjectName} 右 {result.SubjectRightWins} 胜 / {result.OpponentName} 左 {result.OpponentLeftWins} 胜 / 平 {result.SecondHalfDraws}",
+            Text = $"上半场：{subjectName} {result.SubjectLeftWins} 胜 / {result.OpponentName} {result.OpponentRightWins} 胜 / 平 {result.FirstHalfDraws}\n下半场：{subjectName} {result.SubjectRightWins} 胜 / {result.OpponentName} {result.OpponentLeftWins} 胜 / 平 {result.SecondHalfDraws}",
             FontSize = 11,
             TextWrapping = TextWrapping.Wrap,
             Foreground = palette.Muted

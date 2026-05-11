@@ -12,8 +12,8 @@
     "name": "棒球",
     "texturePath": "throwable/baseball.png",
     "Speed": 780,
-    "radius": 20,
-    "damage": 60
+    "radius": 18,
+    "damage": 50
   },
   {
     "key": "shooter",
